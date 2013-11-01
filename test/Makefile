@@ -1,21 +1,25 @@
 CC	= gcc
 CFLAGS	= -Wall -g -MD -O2 -I ../
+LDFLAGS  = -L ../libdune -ldune -lpthread
 
-all: hello test timetest test_sandbox
+all: hello test timetest test_sandbox test_dsmmap
 
 hello: hello.o ../libdune/libdune.a
-	$(CC) $(CFLAGS) $(<) -o hello -L ../libdune -ldune -lpthread
+	$(CC) $(CFLAGS) -o $(@) $(<) $(LDFLAGS)
 
 timetest: timetest.o ../libdune/libdune.a
-	$(CC) $(CFLAGS) $(<) -o $(@) -L ../libdune -ldune -lpthread
+	$(CC) $(CFLAGS) -o $(@) $(<) $(LDFLAGS)
 
 test: test.o ../libdune/libdune.a
-	$(CC) $(CFLAGS) $(<) -o test -L ../libdune -ldune -lpthread
+	$(CC) $(CFLAGS) -o $(@) $(<) $(LDFLAGS)
 
 test_sandbox: test_sandbox.o
-	$(CC) $(CFLAGS) -o $(@) $(<) -lpthread
+	$(CC) $(CFLAGS) -o $(@) $(<) $(LDFLAGS)
+
+test_dsmmap: test_dsmmap.o
+	$(CC) $(CFLAGS) -o $(@) $(<) $(LDFLAGS)
 
 clean:
-	rm -f *.o test *.d hello test test_sandbox
+	rm -f *.o test *.d hello test test_sandbox test_dsmmap
 
 -include *.d
