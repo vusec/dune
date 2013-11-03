@@ -5,20 +5,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 
-#include <libdune/dune.h>
-
-int dsmmap_init()
-{
-    int ret;
-
-    ret = dune_init_and_enter();
-    if (ret) {
-        printf("failed to initialize dune\n");
-        return ret;
-    }
-
-    return 0;
-}
+#include <libdune/dsmmap.h>
 
 #define TDS_LOOP_ITER  3
 #define TDS_BUFF_PAGES 4
@@ -27,17 +14,22 @@ char *buffer = NULL;
 
 void tds_init()
 {
-    int ret = dsmmap_init();
-    assert(ret == 0);
+    int ret;
 
     buffer = mmap(NULL, PGSIZE*TDS_BUFF_PAGES, PROT_READ | PROT_WRITE,
         MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     assert(buffer != MAP_FAILED);
+
+    ret = dsmmap_init();
+    assert(ret == 0);
+    ret = dsmmap(buffer, PGSIZE*TDS_BUFF_PAGES);
+    assert(ret == 0);
 }
 
 void tds_top_of_the_loop(int iteration)
 {
     printf("tds: top of the loop, iteration: %d\n", iteration);
+    dsmctl(DSMMAP_DSMCTL_CHECKPOINT, NULL);
 }
 
 void tds_loop(int iteration)
@@ -53,7 +45,9 @@ void tds_loop(int iteration)
 
 void tds_close()
 {
+    dsmunmap(buffer, PGSIZE*TDS_BUFF_PAGES);
     munmap(buffer, PGSIZE*TDS_BUFF_PAGES);
+    buffer = NULL;
 }
 
 int main()
@@ -67,5 +61,6 @@ int main()
     }
     tds_close();
 
-    return 0;
+    return 1;
 }
+
