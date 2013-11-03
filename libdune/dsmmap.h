@@ -5,7 +5,11 @@
 #include <libdune/cpu-x86.h>
 
 #define DSMMAP_DEBUG            1
-#define DSMMAP_MAX_PAGES       10
+#define DSMMAP_MAX_PAGES     1000
+#define DSMMAP_MAX_RANGES     100
+
+#define MIN(X, Y) (X < Y ? X : Y)
+#define MAX(X, Y) (X > Y ? X : Y)
 
 typedef enum dsmmap_dsmctl_op_e {
     DSMMAP_DSMCTL_CHECKPOINT,

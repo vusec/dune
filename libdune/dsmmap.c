@@ -12,6 +12,17 @@ unsigned long dsmmap_num_iter_pages = 0;
 char dsmmap_mem[DSMMAP_MAX_PAGES*PGSIZE];
 unsigned long dsmmap_num_mem_pages = 0;
 
+typedef struct dsmmap_cb_args_s {
+    unsigned long start;
+    unsigned long end;
+    struct {
+        unsigned long start;
+        unsigned long end;
+    } ranges[DSMMAP_MAX_RANGES];
+    unsigned long range_idx;
+} dsmmap_cb_args_t;
+__thread dsmmap_cb_args_t dsmmap_cb_args;
+
 void dsmmap_mem_flush()
 {
     dsmmap_num_mem_pages = 0;
@@ -122,10 +133,12 @@ static void dsmctl_checkpoint()
     dsmmap_mem_flush();
 }
 
+/* Public interface. */
 int dsmmap_init()
 {
     int ret;
 
+    /* XXX: Handle fork(). */
     ret = dune_init_and_enter();
     if (ret) {
         printf("failed to initialize dune\n");
@@ -154,15 +167,101 @@ int dsmctl(dsmmap_dsmctl_op_t op, void *ptr)
     return ret;
 }
 
+static int dsmmap_procmap_entry_intersects(const struct dune_procmap_entry *ent,
+    unsigned long *start, unsigned long *end)
+{
+    if (ent->begin >= *end || ent->end <= *start) {
+        return 0;
+    }
+    *start = MAX(ent->begin, *start);
+    *end = MIN(ent->end, *end);
+
+    return 1;
+}
+
+static int dsmmap_procmap_entry_is_cowable(const struct dune_procmap_entry *ent)
+{
+    return ent->w
+        && !IS_LIBDUNE_ADDR(ent->begin) && !IS_LIBDUNE_ADDR(ent->end - 1)
+        && ent->type != PROCMAP_TYPE_STACK;
+}
+
+static void dsmmap_cb_args_ranges_mprotect(unsigned long perm)
+{
+    unsigned long len = dsmmap_cb_args.range_idx;
+    int i;
+
+    for (i=0;i<len;i++) {
+        unsigned long start = dsmmap_cb_args.ranges[i].start;
+        unsigned long end = dsmmap_cb_args.ranges[i].end;
+        dune_vm_mprotect(pgroot, (void*)start, end-start, perm);
+    }
+}
+
+static void dsmmap_cb(const struct dune_procmap_entry *ent)
+{
+    unsigned long start, end;
+
+    if (!dsmmap_procmap_entry_is_cowable(ent)) {
+        return;
+    }
+    start = dsmmap_cb_args.start;
+    end = dsmmap_cb_args.end;
+    if (!dsmmap_procmap_entry_intersects(ent, &start, &end)) {
+        return;
+    }
+
+#if DSMMAP_DEBUG
+    dune_printf("dsmmap: +dune_vm_mprotect [0x%08x, 0x%08x)\n", start, end);
+#endif
+
+    assert(dsmmap_cb_args.range_idx < DSMMAP_MAX_RANGES);
+    dsmmap_cb_args.ranges[dsmmap_cb_args.range_idx].start = start;
+    dsmmap_cb_args.ranges[dsmmap_cb_args.range_idx++].end = end;
+}
+
+static void dsmunmap_cb(const struct dune_procmap_entry *ent)
+{
+    unsigned long start, end;
+
+    if (!dsmmap_procmap_entry_is_cowable(ent)) {
+        return;
+    }
+    start = dsmmap_cb_args.start;
+    end = dsmmap_cb_args.end;
+    if (!dsmmap_procmap_entry_intersects(ent, &start, &end)) {
+        return;
+    }
+
+#if DSMMAP_DEBUG
+    dune_printf("dsmmap: -dune_vm_mprotect [0x%08x, 0x%08x)\n", start, end);
+#endif
+
+    assert(dsmmap_cb_args.range_idx < DSMMAP_MAX_RANGES);
+    dsmmap_cb_args.ranges[dsmmap_cb_args.range_idx].start = start;
+    dsmmap_cb_args.ranges[dsmmap_cb_args.range_idx++].end = end;
+}
+
 int dsmmap(void *addr, size_t size)
 {
-    dune_vm_mprotect(pgroot, addr, size, PERM_U|PERM_R|PERM_USR1);
+    /* XXX: Save dsmmapped ranges and handle brk(), mmap(), mprotect(), etc. */
+    dsmmap_cb_args.range_idx = 0;
+    dsmmap_cb_args.start = (unsigned long) addr;
+    dsmmap_cb_args.end = dsmmap_cb_args.start + size;
+    dune_procmap_iterate(&dsmmap_cb);
+    dsmmap_cb_args_ranges_mprotect(PERM_U|PERM_R|PERM_USR1);
+
     return 0;
 }
 
 int dsmunmap(void *addr, size_t size)
 {
-    dune_vm_mprotect(pgroot, addr, size, PERM_U|PERM_R|PERM_W);
+    dsmmap_cb_args.range_idx = 0;
+    dsmmap_cb_args.start = (unsigned long) addr;
+    dsmmap_cb_args.end = dsmmap_cb_args.start + size;
+    dune_procmap_iterate(&dsmunmap_cb);
+    dsmmap_cb_args_ranges_mprotect(PERM_U|PERM_R|PERM_USR1);
+
     return 0;
 }
 

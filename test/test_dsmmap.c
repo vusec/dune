@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <libdune/dsmmap.h>
 
@@ -22,6 +23,8 @@ void tds_init()
 
     ret = dsmmap_init();
     assert(ret == 0);
+
+    /* XXX: dsmmap the entire address space [0, ULONG_MAX). */
     ret = dsmmap(buffer, PGSIZE*TDS_BUFF_PAGES);
     assert(ret == 0);
 }
