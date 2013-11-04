@@ -4,13 +4,13 @@
 #include <libdune/dsmmap.h>
 
 dsmmap_page_t dsmmap_pages[DSMMAP_MAX_PAGES];
-unsigned long dsmmap_num_pages = 0;
+unsigned long dsmmap_num_pages;
 
 dsmmap_page_t dsmmap_iter_pages[DSMMAP_MAX_PAGES];
-unsigned long dsmmap_num_iter_pages = 0;
+unsigned long dsmmap_num_iter_pages;
 
 char dsmmap_mem[DSMMAP_MAX_PAGES*PGSIZE];
-unsigned long dsmmap_num_mem_pages = 0;
+unsigned long dsmmap_num_mem_pages;
 
 typedef struct dsmmap_cb_args_s {
     unsigned long start;
