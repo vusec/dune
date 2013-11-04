@@ -365,13 +365,12 @@ static void setup_vdso(void *addr)
 	struct dynsym *ds, *d;
 	unsigned char *vdso;
 	ptent_t *pte;
-
 	memset(&elf, 0, sizeof(elf));
 
 	ds = xmalloc(sizeof(*ds));
 	elf.priv = ds;
 
-	if (dune_elf_open_mem(&elf, addr, PGSIZE))
+	if (dune_elf_open_mem(&elf, addr, VDSO_SIZE))
 		err(1, "dune_elf_open_mem()");
 
 	if (elf.hdr.e_type != ET_DYN)
@@ -379,12 +378,12 @@ static void setup_vdso(void *addr)
 
 	dune_elf_iter_sh(&elf, vdso_sh_cb);
 
-	vdso = mmap(NULL, PGSIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
+	vdso = mmap(NULL, VDSO_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
 		    MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	if (vdso == MAP_FAILED)
 		err(1, "mmap()");
 
-	memcpy(vdso, addr, PGSIZE);
+	memcpy(vdso, addr, VDSO_SIZE);
 
 	dune_vm_lookup(pgroot, addr, 1, &pte);
 	*pte = PTE_ADDR(dune_va_to_pa(vdso)) | PTE_P | PTE_U;
@@ -399,7 +398,7 @@ static void setup_vdso(void *addr)
 
 	free(elf.priv);
 
-	mprotect(vdso, PGSIZE, PROT_READ | PROT_EXEC);
+	mprotect(vdso, VDSO_SIZE, PROT_READ | PROT_EXEC);
 }
 
 static void __setup_mappings_cb(const struct dune_procmap_entry *ent)
