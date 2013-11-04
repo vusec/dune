@@ -24,8 +24,7 @@ void tds_init()
     ret = dsmmap_init();
     assert(ret == 0);
 
-    /* XXX: dsmmap the entire address space [0, ULONG_MAX). */
-    ret = dsmmap(buffer, PGSIZE*TDS_BUFF_PAGES);
+    ret = dsmmap(0, ULONG_MAX);
     assert(ret == 0);
 }
 
@@ -48,7 +47,7 @@ void tds_loop(int iteration)
 
 void tds_close()
 {
-    dsmunmap(buffer, PGSIZE*TDS_BUFF_PAGES);
+    dsmunmap(0, ULONG_MAX);
     munmap(buffer, PGSIZE*TDS_BUFF_PAGES);
     buffer = NULL;
 }
