@@ -9,7 +9,7 @@
 #include "elf.h"
 #include "fpu.h"
 
-#define VDSO_SIZE (2 * PG_SIZE)
+#define VDSO_SIZE (2 * PGSIZE)
 
 typedef void (*sighandler_t)(int);
 
