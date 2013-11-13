@@ -1,6 +1,6 @@
 CC	= gcc
 CFLAGS	= -Wall -g -MD -O2 -I ../ -fno-common
-LDFLAGS  = -L ../libdune -ldune -lpthread
+LDFLAGS  =  -fuse-ld=bfd -L ../libdune -ldune -lpthread
 
 all: hello test timetest test_sandbox test_dsmmap
 
