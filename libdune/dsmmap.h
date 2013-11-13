@@ -4,7 +4,7 @@
 #include <libdune/dune.h>
 #include <libdune/cpu-x86.h>
 
-#define DSMMAP_DEBUG            1
+#define DSMMAP_DEBUG            0
 #define DSMMAP_MAX_PAGES     1000
 #define DSMMAP_MAX_RANGES     100
 
