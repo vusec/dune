@@ -25,6 +25,9 @@ __thread dsmmap_cb_args_t dsmmap_cb_args;
 
 dsmmap_stats_t dsmmap_stats;
 
+int dsmmap_debug = DSMMAP_DEBUG_DEFAULT;
+printf_t dsmmap_printf = DSMMAP_PRINTF_DEFAULT;
+
 void dsmmap_mem_flush()
 {
     dsmmap_num_mem_pages = 0;
@@ -68,7 +71,7 @@ int dsmmap_page_list_iter_next(dsmmap_page_t *page, dsmmap_page_t **iter)
 
 void dsmmap_default_pgflt_handler(uintptr_t addr, uint64_t fec, struct dune_tf *tf)
 {
-    dune_printf("unhandled page fault 0x%016lx %lx\n",
+    dsmmap_printf("unhandled page fault 0x%016lx %lx\n",
         addr, tf->err);
     dune_dump_trap_frame(tf);
     dune_procmap_dump();
@@ -80,9 +83,7 @@ static inline void dssmap_wp_pgflt_handler(uintptr_t addr, uint64_t fec, struct 
 {
     dsmmap_page_t page;
 
-#if DSMMAP_DEBUG
-    dune_printf("Faulting @address 0x%016lx\n", addr);
-#endif
+    dsmmap_debug_printf("[ckpt=%lu] Faulting @address 0x%016lx\n", DSMMAP_STAT(num_checkpoints), addr);
 
     page.addr = addr;
     dsmmap_page_list_add(&page);
@@ -119,10 +120,6 @@ static void dsmctl_checkpoint()
     dsmmap_page_t *iter;
     ptent_t *pte = NULL;
     int ret;
-
-#if DSMMAP_DEBUG
-    dune_printf("Checkpointing dirty pages...\n");
-#endif
 
     dsmmap_page_list_clear_and_iter(&iter);
     while (dsmmap_page_list_iter_next(&page, &iter)) {
@@ -215,9 +212,7 @@ static void dsmmap_cb(const struct dune_procmap_entry *ent)
         return;
     }
 
-#if DSMMAP_DEBUG
-    dune_printf("dsmmap: +dune_vm_mprotect [0x%08x, 0x%08x)\n", start, end);
-#endif
+    dsmmap_debug_printf("dsmmap: +dune_vm_mprotect [0x%08x, 0x%08x)\n", start, end);
 
     assert(dsmmap_cb_args.range_idx < DSMMAP_MAX_RANGES);
     dsmmap_cb_args.ranges[dsmmap_cb_args.range_idx].start = start;
@@ -237,9 +232,7 @@ static void dsmunmap_cb(const struct dune_procmap_entry *ent)
         return;
     }
 
-#if DSMMAP_DEBUG
-    dune_printf("dsmmap: -dune_vm_mprotect [0x%08x, 0x%08x)\n", start, end);
-#endif
+    dsmmap_debug_printf("dsmmap: -dune_vm_mprotect [0x%08x, 0x%08x)\n", start, end);
 
     assert(dsmmap_cb_args.range_idx < DSMMAP_MAX_RANGES);
     dsmmap_cb_args.ranges[dsmmap_cb_args.range_idx].start = start;

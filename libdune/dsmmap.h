@@ -4,7 +4,6 @@
 #include <libdune/dune.h>
 #include <libdune/cpu-x86.h>
 
-#define DSMMAP_DEBUG            0
 #define DSMMAP_MAX_PAGES     1000
 #define DSMMAP_MAX_RANGES     100
 
@@ -29,6 +28,23 @@ extern dsmmap_stats_t dsmmap_stats;
 
 #define DSMMAP_STAT(X) (dsmmap_stats.X)
 
+/* Debugging definitions. */
+#define DSMMAP_DEBUG_DEFAULT 0
+extern int dsmmap_debug;
+#define dsmmap_set_debug_enabled(D) (dsmmap_debug = D)
+
+#define DSMMAP_PRINTF_DEFAULT printf
+typedef int (*printf_t)(const char *format, ...);
+extern printf_t dsmmap_printf;
+#define dsmmap_set_printf(P) (dsmmap_printf = P)
+
+#define dsmmap_debug_printf(FMT, ...) do { \
+    if (dsmmap_debug) { \
+        dsmmap_printf(FMT, __VA_ARGS__); \
+    } \
+} while(0)
+
+/* Public interface. */
 int dsmmap_init();
 int dsmmap(void *addr, size_t size);
 int dsmunmap(void *addr, size_t size);
