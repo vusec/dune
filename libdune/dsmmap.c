@@ -43,9 +43,10 @@ void dsmmap_page_list_add(dsmmap_page_t *page)
     new_page->addr = page->addr;
 
     assert(dsmmap_num_mem_pages < DSMMAP_MAX_PAGES);
-    new_mem = &dsmmap_mem[dsmmap_num_mem_pages++];
+    new_mem = &dsmmap_mem[dsmmap_num_mem_pages*PGSIZE];
     new_page->mem = new_mem;
     memcpy(new_page->mem, (void*)new_page->addr, PGSIZE);
+    dsmmap_num_mem_pages++;
 }
 
 void dsmmap_page_list_clear_and_iter(dsmmap_page_t **iter)
