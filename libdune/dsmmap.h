@@ -21,6 +21,14 @@ typedef struct dsmmap_page_s {
     void *mem;
 } dsmmap_page_t;
 
+typedef struct dsmmap_stats_s {
+    unsigned long num_cows;
+    unsigned long num_checkpoints;
+} dsmmap_stats_t;
+extern dsmmap_stats_t dsmmap_stats;
+
+#define DSMMAP_STAT(X) (dsmmap_stats.X)
+
 int dsmmap_init();
 int dsmmap(void *addr, size_t size);
 int dsmunmap(void *addr, size_t size);

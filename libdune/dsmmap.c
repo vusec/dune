@@ -23,6 +23,8 @@ typedef struct dsmmap_cb_args_s {
 } dsmmap_cb_args_t;
 __thread dsmmap_cb_args_t dsmmap_cb_args;
 
+dsmmap_stats_t dsmmap_stats;
+
 void dsmmap_mem_flush()
 {
     dsmmap_num_mem_pages = 0;
@@ -87,6 +89,7 @@ static inline void dssmap_wp_pgflt_handler(uintptr_t addr, uint64_t fec, struct 
     *pte &= ~PTE_USR1;
     *pte |= PTE_W;
     dune_flush_tlb_one(addr);
+    DSMMAP_STAT(num_cows)++;
 }
 
 void dsmmap_pgflt_handler(uintptr_t addr, uint64_t fec, struct dune_tf *tf)
@@ -131,6 +134,7 @@ static void dsmctl_checkpoint()
         dune_flush_tlb_one(page.addr);
     }
     dsmmap_mem_flush();
+    DSMMAP_STAT(num_checkpoints)++;
 }
 
 /* Public interface. */
