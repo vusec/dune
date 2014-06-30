@@ -9,6 +9,8 @@
 #include "elf.h"
 #include "fpu.h"
 
+#include "../kern/dune.h"
+
 typedef void (*sighandler_t)(int);
 
 // utilities
@@ -169,17 +171,20 @@ static inline void dune_page_put(struct page *pg)
 // virtual memory
 
 extern ptent_t *pgroot;
+extern uintptr_t phys_limit;
 extern uintptr_t mmap_base;
 extern uintptr_t stack_base;
 
 static inline uintptr_t dune_mmap_addr_to_pa(void *ptr)
 {
-	return ((uintptr_t) ptr) - mmap_base + 0x400000000;
+	return ((uintptr_t) ptr) - mmap_base +
+	       phys_limit - GPA_STACK_SIZE - GPA_MAP_SIZE;
 }
 
 static inline uintptr_t dune_stack_addr_to_pa(void *ptr)
 {
-	return ((uintptr_t) ptr) - stack_base + 0x800000000;
+	return ((uintptr_t) ptr) - stack_base +
+	       phys_limit - GPA_STACK_SIZE;
 }
 
 static inline uintptr_t dune_va_to_pa(void *ptr)
@@ -197,11 +202,13 @@ static inline uintptr_t dune_va_to_pa(void *ptr)
 #define PERM_W		0x0002	/* write permission */
 #define PERM_X		0x0004	/* execute permission */
 #define PERM_U		0x0008	/* user-level permission */
-#define PERM_COW	0x0010	/* COW flag */
+#define PERM_UC		0x0010  /* uncachable */
+#define PERM_COW	0x0020	/* COW flag */
 #define PERM_USR1	0x1000  /* User flag 1 */
 #define PERM_USR2	0x2000  /* User flag 2 */
 #define PERM_USR3	0x3000  /* User flag 3 */
 #define PERM_BIG	0x0100	/* Use large pages */
+#define PERM_BIG_1GB	0x0200	/* Use large pages (1GB) */
 
 // Helper Macros
 #define PERM_SCODE	(PERM_R | PERM_X)
@@ -238,6 +245,16 @@ static inline void __invpcid(int mode, unsigned long addr)
 		     "a" (&operand), "c" (mode) : "cc", "memory");
 }
 
+static inline void __monitor(void const *p, unsigned extensions, unsigned hints)
+{
+	asm volatile("monitor" : : "a" (p), "c" (extensions), "d" (hints));
+}
+
+static inline void __mwait(unsigned idle_state, unsigned flags)
+{
+	asm volatile("mwait" : : "a" (idle_state), "c" (flags));
+}
+
 /* Define beginning and end of VA space */
 #define VA_START		((void *)0)
 #define VA_END			((void *)-1)
@@ -246,6 +263,7 @@ enum {
 	CREATE_NONE = 0,
 	CREATE_NORMAL = 1,
 	CREATE_BIG = 2,
+	CREATE_BIG_1GB = 3,
 };
 
 extern int dune_vm_mprotect(ptent_t *root, void *va, size_t len, int perm);

@@ -108,10 +108,10 @@ int check_string(const void *ptr)
 
 	if ((uintptr_t) ptr < APP_MAX_ELF_VADDR)
 		maxlen = APP_MAX_ELF_VADDR - ((uintptr_t) ptr);
-	else if ((uintptr_t) ptr >= mmap_base) {
-		if ((uintptr_t) ptr >= mmap_base + APP_MMAP_LEN)
+	else if ((uintptr_t) ptr >= UMM_ADDR_START) {
+		if ((uintptr_t) ptr >= UMM_ADDR_END)
 			goto fault;
-		maxlen = mmap_base + APP_MMAP_LEN - ((uintptr_t) ptr);
+		maxlen = UMM_ADDR_END - ((uintptr_t) ptr);
 	} else
 		goto fault;
 
