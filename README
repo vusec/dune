@@ -43,7 +43,7 @@ if these requirements are met.
 Setup
 =====
 
-# make
+# dune.make
 # insmod kern/dune.ko
 # test/hello
 
