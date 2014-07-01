@@ -9,7 +9,12 @@
 #include "elf.h"
 #include "fpu.h"
 
-#define VDSO_SIZE (2 * PGSIZE)
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+	#define VDSO_SIZE (2 * PGSIZE)
+#else
+	#define VDSO_SIZE PGSIZE
+#endif
 
 typedef void (*sighandler_t)(int);
 

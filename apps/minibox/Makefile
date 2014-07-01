@@ -11,7 +11,7 @@ libsandbox.a: $(OBJ)
 	$(AR) cru $(@) $(OBJ)
 	$(RANLIB) $(@)
 
-sandbox: nullsandbox.o libsandbox.a ../../libdune/libdune.a
+sandbox: main.o libsandbox.a ../../libdune/libdune.a
 	$(CC) -o $(@) $(<) $(LDFLAGS)
 
 clean:

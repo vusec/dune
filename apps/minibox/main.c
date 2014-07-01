@@ -1,5 +1,8 @@
 #define _GNU_SOURCE
 
+#include <sys/syscall.h>
+//#include <libdune/dune.h>
+#include "boxer.h"
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -13,6 +16,8 @@ struct elf_data {
 	Elf64_Phdr *phdr;
 	int phnum;
 };
+
+//typedef int (*boxer_syscall_cb)(struct dune_tf *tf);
 
 static int process_elf_ph(struct dune_elf *elf, Elf64_Phdr *phdr)
 {
@@ -274,8 +279,17 @@ static int run_app(uintptr_t sp, uintptr_t e_entry)
 
 extern char **environ;
 
-int boxer_main(int argc, char *argv[])
-{
+static int syscall_monitor(struct dune_tf *tf) {
+	switch (tf->rax) {
+	case SYS_open:
+		printf("opening file %s\n", (char*) ARG0(tf));
+		break;
+	}
+
+	return 1;
+}
+
+int main(int argc, char *argv[]) {
 	int ret;
 	uintptr_t sp;
 	struct elf_data data;
@@ -287,6 +301,8 @@ int boxer_main(int argc, char *argv[])
 	printf(" \b"); 
 
 //	printf("%s\n", environ[0]);
+
+	//boxer_register_syscall_monitor(syscall_monitor);
 
 	ret = dune_init(0);
 	if (ret) {

@@ -122,6 +122,10 @@ void dune_dump_trap_frame(struct dune_tf *tf)
 
 void dune_syscall_handler(struct dune_tf *tf)
 {
+	#ifdef DEBUG
+	printf("Inside syscall %lx handler\n", tf->rax);
+	#endif
+
 	if (syscall_cb) {
 		syscall_cb(tf);
 	} else {
