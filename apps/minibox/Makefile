@@ -2,19 +2,19 @@ CC      = gcc
 LD	= ld
 RANLIB	= ranlib
 CFLAGS  = -Wall -O2 -MD -I ../../
-LDFLAGS = -O2 -L. -L ../../libdune -lsandbox -ldune -lpthread -T sandbox.ld # -fuse-ld=bfd
+LDFLAGS = -O2 -L. -L ../../libdune -lminibox -ldune -lpthread -T minibox.ld
 OBJ     = main.o umm.o trap.o
 
-all: libsandbox.a sandbox
+all: libminibox.a minibox
 
-libsandbox.a: $(OBJ)
+libminibox.a: $(OBJ)
 	$(AR) cru $(@) $(OBJ)
 	$(RANLIB) $(@)
 
-sandbox: main.o libsandbox.a ../../libdune/libdune.a
+minibox: nullminibox.o libminibox.a ../../libdune/libdune.a
 	$(CC) -o $(@) $(<) $(LDFLAGS)
 
 clean:
-	rm -f *.o test *.d sandbox libsandbox.a
+	rm -f *.o test *.d minibox libminibox.a
 
 -include *.d

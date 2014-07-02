@@ -15,7 +15,7 @@
 #include <sys/shm.h>
 #include <stdlib.h>
 
-#include "sandbox.h"
+#include "minibox.h"
 
 #define USE_BIG_MEM 0
 

@@ -32,7 +32,7 @@
 #include <linux/futex.h>
 #include <linux/unistd.h>
 
-#include "sandbox.h"
+#include "minibox.h"
 #include "boxer.h"
 #include "libdune/cpu-x86.h"
 

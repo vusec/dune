@@ -1,9 +1,9 @@
 /*
- * sandbox.h - the main local header
+ * minibox.h - the main local header
  */
 
-#ifndef __DUNESB_SANDBOX_H__
-#define __DUNESB_SANDBOX_H__
+#ifndef __DUNESB_MINIBOX_H__
+#define __DUNESB_MINIBOX_H__
 
 #include <errno.h>
 #include <sys/types.h>
@@ -24,7 +24,7 @@
 #define APP_STACK_SIZE		0x800000 /* 8 megabytes */
 
 /**
- * mem_ref_is_safe - determines if a memory range belongs to the sandboxed app
+ * mem_ref_is_safe - determines if a memory range belongs to the miniboxed app
  * @ptr: the base address
  * @len: the length
  */
@@ -60,5 +60,5 @@ extern void *umm_mremap(void *old_address, size_t old_size,
 
 extern int trap_init(void);
 
-#endif /* __DUNESB_SANDBOX_H__ */
+#endif /* __DUNESB_MINIBOX_H__ */
 

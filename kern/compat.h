@@ -5,6 +5,14 @@
 #include <asm/fpu-internal.h>
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+#define store_gdt native_store_gdt
+#endif
+
+#ifndef X86_CR4_RDWRGSFS
+#define X86_CR4_RDWRGSFS X86_CR4_FSGSBASE
+#endif
+
 #if !defined(VMX_EPT_AD_BIT)
 #define VMX_EPT_AD_BIT          (1ull << 21)
 #define VMX_EPT_AD_ENABLE_BIT   (1ull << 6)
