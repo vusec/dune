@@ -8,8 +8,8 @@ DSYMBLS = -Wl,--whole-archive -L . -lminidune -Wl,--no-whole-archive
 all: st_init.so libminidune.a monitor dummies
 
 dummies: dummy1.o dummy2.o
-	$(CC) $(CFLAGS) -o dummy1 dummy1.c -ldl $(DSYMBLS) $(LDFLAGS)
-	$(CC) $(CFLAGS) -o dummy2 dummy2.c -ldl $(DSYMBLS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -rdynamic -o dummy1 dummy1.c -ldl $(DSYMBLS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -rdynamic -o dummy2 dummy2.c -ldl $(DSYMBLS) $(LDFLAGS)
 
 monitor: monitor.o libminidune.a
 	$(CC) $(CFLAGS) -rdynamic -o $(@) $(<) -ldl $(DSYMBLS) $(LDFLAGS)

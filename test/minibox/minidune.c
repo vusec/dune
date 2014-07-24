@@ -34,7 +34,7 @@ void pgflt_handler(uintptr_t addr, uint64_t fec, struct dune_tf *tf)
 {
 	ptent_t *pte;
 
-	dune_printf("syscall: caught page fault, addr=%p\n", addr);
+	//dune_printf("syscall: caught page fault, addr=%p\n", addr);
 	dune_vm_lookup(pgroot, (void *) addr, 0, &pte);
 	*pte |= PTE_P | PTE_W | PTE_U | PTE_A | PTE_D;
 }

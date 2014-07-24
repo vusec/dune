@@ -13,3 +13,18 @@ Solve that out.
 Check out the fork code in examples
 
 -- 24/07/2014 --
+
+#define __NR_wait4              61
+So at first it receives a wait syscall invoked by our
+wait call for the child process inside the executable.
+
+SIGSEGV	    11	     Core    Invalid memory reference
+After the wait syscall the child process is killed by
+signal 11
+
+
+[SOLVED] The catch was I should dune_enter() right before
+fork() plus I should also link the new executable to my
+static library in order for the to recognize the symbols
+
+

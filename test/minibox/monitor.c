@@ -32,19 +32,25 @@ main(int argc, char *argv[])
 	cpid = malloc(sizeof(pid_t) * argnum);
 
 	for (i = 0; i < argnum; i++) {
+
+		ret = dune_enter();
+		if (ret) {
+			perror("FAILED to initialize Dune\n");
+			exit(ret);
+		}
+
+		dune_flush_tlb();
+
 		cpid[i] = fork();
+
 		if(cpid[i] == -1) {
 			perror("fork");
 			exit(EXIT_FAILURE);
 		} else if(cpid[i] == 0) {
-			//ret = dune_init_and_enter();
-			//if (ret) {
-			//	perror("FAILED to initialize DUune\n");
-			//	exit(ret);
-			//}
-			//printf("Hello World\n");
+
+			printf("Trying to execute process %d\n", i);
+			execl(argv[i+1], argv[i+1], NULL);
 			exit(0);
-			//execl(argv[i+1], argv[i+1], NULL);
 		}
 	}
 
