@@ -1,15 +1,15 @@
 SHELL := /bin/bash
 CC	= gcc
 AR  = ar
-CFLAGS	= -g -MD -O2 -I ../.. -fno-common
+CFLAGS	= -Wall -g -MD -O2 -I ../.. -fno-common
 LDFLAGS = -L ../../libdune -ldune -lpthread
 DSYMBLS = -Wl,--whole-archive -L . -lminidune -Wl,--no-whole-archive
 
-all: dummies st_init.so libminidune.a monitor
+all: st_init.so libminidune.a monitor dummies
 
 dummies: dummy1.o dummy2.o
-	$(CC) -o dummy1 dummy1.c $(LDFLAGS)
-	$(CC) -o dummy2 dummy2.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -o dummy1 dummy1.c -ldl $(DSYMBLS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o dummy2 dummy2.c -ldl $(DSYMBLS) $(LDFLAGS)
 
 monitor: monitor.o libminidune.a
 	$(CC) $(CFLAGS) -rdynamic -o $(@) $(<) -ldl $(DSYMBLS) $(LDFLAGS)
@@ -24,8 +24,8 @@ minidune.o: minidune.c
 	$(CC) -c -I ../.. -o $(@) $(<) $(LDFLAGS)
 
 .PHONY: clean dryrun
-
-run:
+	
+dryrun:
 	./monitor dummy1 dummy2
 
 clean:

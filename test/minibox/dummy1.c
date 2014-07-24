@@ -3,6 +3,7 @@
 #include <sys/syscall.h>
 
 #include "colors.h"
+#include "libdune/dune.h"
 
 int main () { 
 	int id;

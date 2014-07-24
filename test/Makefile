@@ -24,6 +24,8 @@ test_syscall: test_syscall.o ../libdune/libdune.a
 	$(CC) $(CFLAGS) -o $(@) $(<) $(LDFLAGS)
 
 clean:
-	rm -f *.o test *.d hello test test_sandbox test_dsmmap
+	rm -f *.o test *.d hello test test_sandbox test_dsmmap timetest \
+test_syscall
+
 
 -include *.d
