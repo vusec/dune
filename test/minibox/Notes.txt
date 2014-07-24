@@ -1,0 +1,15 @@
+-- 22/07/2014 --
+
+> syscall: caught syscall, num=61
+> killed by signal 11
+> syscall: caught syscall, num=61
+> killed by signal 11  
+
+For some reasono when linking with dune although
+fork seems to work the processes are getting killed
+with signal 11.
+Solve that out.
+
+Check out the fork code in examples
+
+-- 24/07/2014 --
