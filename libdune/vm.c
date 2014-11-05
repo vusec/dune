@@ -76,6 +76,15 @@ static int __dune_vm_page_walk(ptent_t *dir, void *start_va, void *end_va,
 			}
 		}
 
+		if (level == 2) {
+			if (create == CREATE_BIG_1GB || pte_big(*pte)) {
+				ret = cb(arg, pte, cur_va);
+				if (ret)
+					return ret;
+				continue;
+			}
+		}
+
 		if (!pte_present(*pte)) {
 			ptent_t *new_pte;
 
@@ -138,6 +147,9 @@ int dune_vm_page_walk(ptent_t *root, void *start_va, void *end_va,
 		memset(pde, 0, PGSIZE);
 
 		pdpte[j] = PTE_ADDR(pde) | PTE_DEF_FLAGS;
+	} else if (pte_big(pdpte[j])) {
+		*pte_out = &pdpte[j];
+		return 0;
 	} else
 		pde = (ptent_t*) PTE_ADDR(pdpte[j]);
 
@@ -171,6 +183,8 @@ static inline ptent_t get_pte_perm(int perm)
 		pte_perm |= PTE_NX;
 	if (perm & PERM_U)
 		pte_perm |= PTE_U;
+	if (perm & PERM_UC)
+		pte_perm |= PTE_PCD;
 	if (perm & PERM_COW)
 		pte_perm |= PTE_COW;
 	if (perm & PERM_USR1)
@@ -179,7 +193,7 @@ static inline ptent_t get_pte_perm(int perm)
 		pte_perm |= PTE_USR2;
 	if (perm & PERM_USR3)
 		pte_perm |= PTE_USR3;
-	if (perm & PERM_BIG)
+	if (perm & PERM_BIG || perm & PERM_BIG_1GB)
 		pte_perm |= PTE_PS;
 
 	return pte_perm;
@@ -238,6 +252,7 @@ int dune_vm_map_phys(ptent_t *root, void *va, size_t len, void *pa, int perm)
 {
 	int ret;
 	struct map_phys_data data;
+	int create;
 
 //	if (!(perm & PERM_R) && (perm & ~(PERM_R)))
 //		return -EINVAL;
@@ -246,11 +261,17 @@ int dune_vm_map_phys(ptent_t *root, void *va, size_t len, void *pa, int perm)
 	data.va_base = (unsigned long) va;
 	data.pa_base = (unsigned long) pa;
 
+	if (perm & PERM_BIG)
+		create = CREATE_BIG;
+	else if (perm & PERM_BIG_1GB)
+		create = CREATE_BIG_1GB;
+	else
+		create = CREATE_NORMAL;
+
 	ret = __dune_vm_page_walk(root, va, va + len - 1,
 				 &__dune_vm_map_phys_helper,
 				 (void *) &data, 3,
-				 (perm & PERM_BIG) ? CREATE_BIG :
-						     CREATE_NORMAL);
+				 create);
 	if (ret)
 		return ret;
 

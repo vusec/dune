@@ -19,8 +19,8 @@
 //   (8 GB for stack, heap, and mappings)
 #define LOADER_VADDR_OFF	0x6F000000
 #define APP_MAX_ELF_VADDR	0x70000000
-#define APP_MMAP_BASE_OFF	0x200000000
-#define APP_MMAP_LEN		0x200000000
+#define UMM_ADDR_START		0x300000000
+#define UMM_ADDR_END		0x700000000
 #define APP_STACK_SIZE		0x800000 /* 8 megabytes */
 
 /**
@@ -38,9 +38,8 @@ static inline bool mem_ref_is_safe(const void *ptr, size_t len)
 	    end <= APP_MAX_ELF_VADDR)
 		return true;
 
-	if (len <= APP_MMAP_LEN &&
-	    begin >= mmap_base &&
-	    end < mmap_base + APP_MMAP_LEN)
+	if (begin >= UMM_ADDR_START &&
+	    end < UMM_ADDR_END)
 		return true;
 
 	return false;

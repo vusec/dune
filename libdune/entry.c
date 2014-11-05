@@ -20,13 +20,13 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
-#include "../kern/dune.h"
 #include "dune.h"
 #include "mmu.h"
 #include "cpu-x86.h"
 #include "local.h"
 
 ptent_t *pgroot;
+uintptr_t phys_limit;
 uintptr_t mmap_base;
 uintptr_t stack_base;
 
@@ -359,7 +359,7 @@ static void do_vdso(void *addr, char *name)
 	*i = sysno;
 }
 
-static void setup_vdso(void *addr)
+static void setup_vdso(void *addr, size_t len)
 {
 	struct dune_elf elf;
 	struct dynsym *ds, *d;
@@ -370,7 +370,7 @@ static void setup_vdso(void *addr)
 	ds = xmalloc(sizeof(*ds));
 	elf.priv = ds;
 
-	if (dune_elf_open_mem(&elf, addr, VDSO_SIZE))
+	if (dune_elf_open_mem(&elf, addr, len))
 		err(1, "dune_elf_open_mem()");
 
 	if (elf.hdr.e_type != ET_DYN)
@@ -378,12 +378,12 @@ static void setup_vdso(void *addr)
 
 	dune_elf_iter_sh(&elf, vdso_sh_cb);
 
-	vdso = mmap(NULL, VDSO_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
+	vdso = mmap(NULL, len, PROT_READ | PROT_WRITE | PROT_EXEC,
 		    MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	if (vdso == MAP_FAILED)
 		err(1, "mmap()");
 
-	memcpy(vdso, addr, VDSO_SIZE);
+	memcpy(vdso, addr, len);
 
 	dune_vm_lookup(pgroot, addr, 1, &pte);
 	*pte = PTE_ADDR(dune_va_to_pa(vdso)) | PTE_P | PTE_U;
@@ -398,7 +398,7 @@ static void setup_vdso(void *addr)
 
 	free(elf.priv);
 
-	mprotect(vdso, VDSO_SIZE, PROT_READ | PROT_EXEC);
+	mprotect(vdso, len, PROT_READ | PROT_EXEC);
 }
 
 static void __setup_mappings_cb(const struct dune_procmap_entry *ent)
@@ -416,7 +416,7 @@ static void __setup_mappings_cb(const struct dune_procmap_entry *ent)
 	}
 
 	if (ent->type == PROCMAP_TYPE_VDSO) {
-		setup_vdso((void*) ent->begin);
+		setup_vdso((void*) ent->begin, ent->end - ent->begin);
 		return;
 	}
 
@@ -453,7 +453,7 @@ static int __setup_mappings_precise(void)
 static void setup_vdso_cb(const struct dune_procmap_entry *ent)
 {
 	if (ent->type == PROCMAP_TYPE_VDSO) {
-		setup_vdso((void*) ent->begin);
+		setup_vdso((void*) ent->begin, ent->end - ent->begin);
 		return;
 	}
 }
@@ -462,20 +462,27 @@ static int __setup_mappings_full(struct dune_layout *layout)
 {
 	int ret;
 
-	ret = dune_vm_map_phys(pgroot, (void *) layout->base_proc, GPA_SIZE,
-			      (void *) GPA_ADDR_PROC,
+	ret = dune_vm_map_phys(pgroot, (void *) PAGEBASE,
+			      MAX_PAGES * PGSIZE,
+			      (void *) dune_va_to_pa((void *) PAGEBASE),
+			      PERM_R | PERM_W | PERM_BIG);
+	if (ret)
+		return ret;
+
+	ret = dune_vm_map_phys(pgroot, (void *) 0, 1UL << 32,
+			       (void *) 0,
+			       PERM_R | PERM_W | PERM_X | PERM_U);
+	if (ret)
+		return ret;
+
+	ret = dune_vm_map_phys(pgroot, (void *) layout->base_map, GPA_MAP_SIZE,
+			      (void *) dune_mmap_addr_to_pa((void *) layout->base_map),
 			      PERM_R | PERM_W | PERM_X | PERM_U);
 	if (ret)
 		return ret;
 
-	ret = dune_vm_map_phys(pgroot, (void *) layout->base_map, GPA_SIZE,
-			      (void *) GPA_ADDR_MAP,
-			      PERM_R | PERM_W | PERM_X | PERM_U);
-	if (ret)
-		return ret;
-
-	ret = dune_vm_map_phys(pgroot, (void *) layout->base_stack, GPA_SIZE,
-			      (void *) GPA_ADDR_STACK,
+	ret = dune_vm_map_phys(pgroot, (void *) layout->base_stack, GPA_STACK_SIZE,
+			      (void *) dune_stack_addr_to_pa((void *) layout->base_stack),
 			      PERM_R | PERM_W | PERM_X | PERM_U);
 	if (ret)
 		return ret;
@@ -493,6 +500,7 @@ static int setup_mappings(bool full)
 	if (ret)
 		return ret;
 
+	phys_limit = layout.phys_limit;
 	mmap_base = layout.base_map;
 	stack_base = layout.base_stack;
 
@@ -671,6 +679,7 @@ int dune_init(bool map_full)
 		case SIGSTOP:
 		case SIGKILL:
 		case SIGCHLD:
+		case SIGINT:
 			continue;
 		}
 

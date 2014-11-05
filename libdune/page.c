@@ -108,7 +108,6 @@ void dune_page_free(struct page *pg)
 
 bool dune_page_isfrompool(physaddr_t pa)
 {
-	// XXX: Insufficent?
 	return (pa >= PAGEBASE) && (pa < PAGEBASE + num_pages*PGSIZE);
 }
 
