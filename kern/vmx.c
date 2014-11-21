@@ -78,7 +78,7 @@ static sys_call_ptr_t dune_syscall_tbl[NUM_SYSCALLS] __cacheline_aligned;
 static DEFINE_PER_CPU(struct vmcs *, vmxarea);
 static DEFINE_PER_CPU(struct desc_ptr, host_gdt);
 static DEFINE_PER_CPU(int, vmx_enabled);
-static DEFINE_PER_CPU(struct vmx_vcpu *, local_vcpu);
+DEFINE_PER_CPU(struct vmx_vcpu *, local_vcpu);
 
 static struct vmcs_config {
 	int size;
@@ -255,16 +255,6 @@ static void vmcs_load(struct vmcs *vmcs)
 	if (error)
 		printk(KERN_ERR "vmx: vmptrld %p/%llx failed\n",
 		       vmcs, phys_addr);
-}
-
-
-static __always_inline unsigned long vmcs_readl(unsigned long field)
-{
-	unsigned long value;
-
-	asm volatile (ASM_VMX_VMREAD_RDX_RAX
-		      : "=a"(value) : "d"(field) : "cc");
-	return value;
 }
 
 static __always_inline u16 vmcs_read16(unsigned long field)
@@ -718,6 +708,8 @@ void vmx_ept_sync_individual_addr(struct vmx_vcpu *vcpu, gpa_t gpa)
 		__vmx_sync_individual_addr_helper, (void *) &args, 1);
 }
 
+#define STACK_DEPTH 12
+
 /**
  * vmx_dump_cpu - prints the CPU state
  * @vcpu: VCPU to print
@@ -725,6 +717,8 @@ void vmx_ept_sync_individual_addr(struct vmx_vcpu *vcpu, gpa_t gpa)
 static void vmx_dump_cpu(struct vmx_vcpu *vcpu)
 {
 	unsigned long flags;
+	int i;
+	unsigned long *sp, val;
 
 	vmx_get_cpu(vcpu);
 	vcpu->regs[VCPU_REGS_RIP] = vmcs_readl(GUEST_RIP);
@@ -752,6 +746,17 @@ static void vmx_dump_cpu(struct vmx_vcpu *vcpu)
 			vcpu->regs[VCPU_REGS_R12], vcpu->regs[VCPU_REGS_R13]);
 	printk(KERN_INFO "vmx: R14 0x%016llx R15 0x%016llx\n",
 			vcpu->regs[VCPU_REGS_R14], vcpu->regs[VCPU_REGS_R15]);
+
+	printk(KERN_INFO "vmx: Dumping Stack Contents...\n");
+	sp = (unsigned long *) vcpu->regs[VCPU_REGS_RSP];
+	for (i = 0; i < STACK_DEPTH; i++)
+		if (get_user(val, &sp[i]))
+			printk(KERN_INFO "vmx: RSP%+-3ld ?\n",
+				i * sizeof(long));
+		else
+			printk(KERN_INFO "vmx: RSP%+-3ld 0x%016lx\n",
+				i * sizeof(long), val);
+
 	printk(KERN_INFO "vmx: --- End VCPU Dump ---\n");
 }
 
