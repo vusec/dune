@@ -115,7 +115,7 @@ static int setup_safe_stack(struct dune_percpu *percpu)
 }
 
 static void setup_gdt(struct dune_percpu *percpu)
-{	
+{
 	memcpy(percpu->gdt, gdt_template, sizeof(uint64_t) * NR_GDT_ENTRIES);
 
 	percpu->gdt[GD_TSS >> 3] = (SEG_TSSA | SEG_P | SEG_A |
@@ -167,7 +167,7 @@ static int dune_boot(struct dune_percpu *percpu)
 		"sti\n"
 
 		: : "m" (_gdtr), "m" (_idtr) : "rax");
-	
+
 	// STEP 6: FS and GS require special initialization on 64-bit
 	wrmsrl(MSR_FS_BASE, percpu->kfs_base);
 	wrmsrl(MSR_GS_BASE, (unsigned long) percpu);
@@ -178,7 +178,7 @@ static int dune_boot(struct dune_percpu *percpu)
 #define ISR_LEN 16
 
 static inline void set_idt_addr(struct idtd *id, physaddr_t addr)
-{       
+{
         id->low    = addr & 0xFFFF;
         id->middle = (addr >> 16) & 0xFFFF;
         id->high   = (addr >> 32) & 0xFFFFFFFF;
@@ -194,7 +194,7 @@ static void setup_idt(void)
 
 		isr += ISR_LEN * i;
 		memset(id, 0, sizeof(*id));
-                
+
 		id->selector = GD_KT;
 		id->type     = IDTD_P | IDTD_TRAP_GATE;
 
@@ -239,7 +239,7 @@ static int setup_syscall(void)
 	lstara = lstar & ~(PGSIZE - 1);
 	off = lstar - lstara;
 
-	memcpy(page + off, __dune_syscall, 
+	memcpy(page + off, __dune_syscall,
 		(unsigned long) __dune_syscall_end -
 		(unsigned long) __dune_syscall);
 
@@ -248,7 +248,7 @@ static int setup_syscall(void)
 		dune_vm_lookup(pgroot, (void *) (lstara + i), 1, &pte);
 		*pte = PTE_ADDR(pa) | PTE_P;
 	}
-	
+
 	return 0;
 }
 
@@ -409,7 +409,7 @@ static void __setup_mappings_cb(const struct dune_procmap_entry *ent)
 	// page region already mapped
 	if (ent->begin == (unsigned long) PAGEBASE)
 		return;
-	
+
 	if (ent->begin == (unsigned long) VSYSCALL_ADDR) {
 		setup_vsyscall();
 		return;
@@ -593,10 +593,10 @@ static int do_dune_enter(struct dune_percpu *percpu)
  * dune_enter - transitions a process to "Dune mode"
  *
  * Can only be called after dune_init().
- * 
+ *
  * Use this function in each forked child and/or each new thread
  * if you want to re-enter "Dune mode".
- * 
+ *
  * Returns 0 on success, otherwise failure.
  */
 int dune_enter(void)
@@ -625,9 +625,9 @@ int dune_enter(void)
 
 /**
  * dune_init - initializes libdune
- * 
+ *
  * @map_full: determines if the full process address space should be mapped
- * 
+ *
  * Call this function once before using libdune.
  *
  * Dune supports two memory modes. If map_full is true, then every possible
@@ -635,7 +635,7 @@ int dune_enter(void)
  * that are used (e.g. set up through mmap) are mapped. Full mapping consumes
  * a lot of memory when enabled, but disabling it incurs slight overhead
  * since pages will occasionally need to be faulted in.
- * 
+ *
  * Returns 0 on success, otherwise failure.
  */
 int dune_init(bool map_full)
