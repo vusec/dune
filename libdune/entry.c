@@ -388,15 +388,16 @@ static void setup_vdso(void *addr, size_t len)
 	dune_vm_lookup(pgroot, addr, 1, &pte);
 	*pte = PTE_ADDR(dune_va_to_pa(vdso)) | PTE_P | PTE_U;
 
-	while ((d = ds->ds_next)) {
+    d = ds;
+	while ((d = d->ds_next)) {
 		if (d->ds_name[0])
 			do_vdso(vdso + d->ds_off, d->ds_name);
-
-		ds = d;
-		free(d);
 	}
 
-	free(elf.priv);
+    while ((d = ds)) {
+        ds = ds->ds_next;
+        free(d);
+    }
 
 	mprotect(vdso, len, PROT_READ | PROT_EXEC);
 }
