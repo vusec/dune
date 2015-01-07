@@ -38,6 +38,14 @@ static int syscall_monitor(struct dune_tf *tf)
             tf->rax, ARG0(tf), ARG1(tf), ARG2(tf), ARG3(tf), ARG4(tf),
                      ARG5(tf));
     */
+#ifdef INTERCEPT
+    if (tf->rax == SYS_getpid)
+    {
+        tf->rax = -EPERM;
+        return 0;
+    }
+#endif
+    return 1;
 #if 0
     /* Simple test to check if SYS_open calls match (all others ignored) */
     if (tf->rax != SYS_open)
@@ -91,10 +99,12 @@ static int syscall_monitor(struct dune_tf *tf)
 
                 admin->stop_execution = 1;
             }
+            /*
             else
                 fprintf(stderr, "syscall    match: %d: %lu, \t%d: %lu\n",
                         0, admin->last_syscall[0].num,
                         i, admin->last_syscall[i].num);
+            */
 
         }
         admin->count = 0;
@@ -159,7 +169,7 @@ int main(int argc, char *argv[])
         else if (pid == 0)
         {
             mv_id = i;
-            /* 
+            /*
              * Construct new argv to execute in child proc. The loader present
              * in boxer is really limited, and therefore we make that loader
              * load the default system loader, which in turn can load the actual
