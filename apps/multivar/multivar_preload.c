@@ -3,11 +3,15 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
+#include <sys/wait.h>
 
 #include "libdune/dune.h"
+
+#include "syscalls.h"
 
 
 /* Dune handlers. */
@@ -30,8 +34,78 @@ static void syscall_handler(struct dune_tf *tf)
     }
 #endif
 
-    if (tf->rax == SYS_clone || tf->rax == SYS_fork)
-        dune_printf("SYSCALL: %d\n", tf->rax);
+    //if (tf->rax == SYS_getpid)
+    dune_printf("SYSCALL: %d %s %d\n", syscall(SYS_getpid),
+            syscall_names[tf->rax], tf->rax);
+
+    /* the fork and vfork syscalls are normally not used (e.g. glibc implements
+     * fork() with the clone syscall. */
+    if (tf->rax == SYS_fork || tf->rax == SYS_vfork)
+        assert(0);
+
+    if (tf->rax == SYS_clone)
+    {
+        /* Child stack ptr (arg 1) 0 means we do a fork-like operation. */
+        if (ARG1(tf) == 0)
+        {
+            /* Since fork (or actually, clone in this case) escapes dune-mode,
+             * we save the dune-state (thread-local state) for this thread,
+             * fork, reenter dune in the child and restore the state, so we end
+             * up with a copy of this proc in dune mode. */
+            unsigned long fs = dune_get_user_fs();
+            int rc = syscall(SYS_clone, ARG0(tf), ARG1(tf), ARG2(tf), ARG3(tf),
+                    ARG4(tf));
+            if (rc < 0)
+                tf->rax = -errno;
+            else
+                tf->rax = rc;
+
+            if (rc == 0)
+            {
+                /* child */
+                dune_enter();
+                dune_set_user_fs(fs);
+            }
+
+            return;
+
+        }
+        else
+            assert(0); // TODO
+    }
+    else if (tf->rax == SYS_execve)
+    {
+        pid_t pid;
+        printf("EXEC %s\n", (char*)ARG0(tf));
+        /* Escape dune-mode... only way (we know) how is to fork()... */
+        /* If we exec in dune mode we hit a lot of issues, e.g. EPT failures:
+         *  ept: failed to get user page 0
+         *  vmx: page fault failure GPA: 0x0, GVA: 0x0
+         */
+        pid = fork();
+
+        if (pid < 0)
+            assert(0);
+        if (pid == 0)
+        {
+            /* In non-dune mode! */
+            /* TODO: make sure LD_PRELOAD is propagated so dune mode isn't
+             * escaped permanently. */
+            execve((char*)ARG0(tf), (char**)ARG1(tf), (char**)ARG2(tf));
+            assert(0);
+        }
+        else
+        {
+            dune_printf("parent: waiting\n");
+            wait(NULL);
+            dune_printf("parent: done\n");
+            exit(0);
+        }
+
+    }
+
+
+
 	dune_passthrough_syscall(tf);
 }
 
@@ -111,7 +185,7 @@ int main_predune(int argc, char **argv, char **envp)
         fork for all childs?
     */
 
-	//printf("mv: not running dune yet\n");
+	printf("mv: not running dune yet\n");
 
 	ret = dune_init_and_enter();
 	if (ret)
