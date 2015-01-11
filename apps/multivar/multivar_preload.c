@@ -25,7 +25,6 @@ static void pgflt_handler(uintptr_t addr, uint64_t fec, struct dune_tf *tf)
 
 static void syscall_handler(struct dune_tf *tf)
 {
-    //dune_printf("Syscall %d\n", tf->rax);
 #ifdef INTERCEPT
     if (tf->rax == SYS_getpid)
     {
@@ -34,9 +33,9 @@ static void syscall_handler(struct dune_tf *tf)
     }
 #endif
 
-    //if (tf->rax == SYS_getpid)
-    dune_printf("SYSCALL: %d %s %d\n", syscall(SYS_getpid),
-            syscall_names[tf->rax], tf->rax);
+    if (tf->rax == SYS_getpid)
+        dune_printf("SYSCALL: %d %s %d\n", syscall(SYS_getpid),
+                syscall_names[tf->rax], tf->rax);
 
     /* the fork and vfork syscalls are normally not used (e.g. glibc implements
      * fork() with the clone syscall. */
@@ -76,9 +75,8 @@ static void syscall_handler(struct dune_tf *tf)
     else if (tf->rax == SYS_execve)
     {
         pid_t pid;
-        printf("EXEC %s\n", (char*)ARG0(tf));
-        /* Escape dune-mode... only way (we know) how is to fork()... */
-        /* If we exec in dune mode we hit a lot of issues, e.g. EPT failures:
+        /* Escape dune-mode... only way (we know) how is to fork()...
+         * If we exec in dune mode we hit a lot of issues, e.g. EPT failures:
          *  ept: failed to get user page 0
          *  vmx: page fault failure GPA: 0x0, GVA: 0x0
          */
@@ -96,15 +94,11 @@ static void syscall_handler(struct dune_tf *tf)
         }
         else
         {
-            dune_printf("parent: waiting\n");
             wait(NULL);
-            dune_printf("parent: done\n");
             exit(0);
         }
 
     }
-
-
 
 	dune_passthrough_syscall(tf);
 }
@@ -176,16 +170,9 @@ int __libc_start_main(
  */
 int main_predune(int argc, char **argv, char **envp)
 {
-    //fprintf(stderr, "MV_PRELOAD: MV_START_DUNE=%s\n", getenv("MV_START_DUNE"));
 	int ret;
 	unsigned long sp;
 	struct dune_tf *tf;
-    /*
-    if not_forked:
-        fork for all childs?
-    */
-
-	printf("mv: not running dune yet\n");
 
 	ret = dune_init_and_enter();
 	if (ret)
@@ -193,8 +180,6 @@ int main_predune(int argc, char **argv, char **envp)
 		printf("Dune failed to initialize!\n");
 		exit(ret);
 	}
-
-    //dune_printf("now in dune mode\n");
 
 	dune_register_pgflt_handler(pgflt_handler);
 	dune_register_syscall_handler(syscall_handler);
