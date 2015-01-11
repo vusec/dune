@@ -99,7 +99,7 @@ static void benchmark_appel1(void)
 	int i;
 	unsigned long avg_appel1 = 0, avg_user_fault = 0;
 
-	memset(&act, sizeof(sigaction), 0);
+	memset(&act, 0, sizeof(sigaction));
 	act.sa_sigaction = benchmark1_handler;
 	act.sa_flags = SA_SIGINFO;
 	sigemptyset(&act.sa_mask);
@@ -126,7 +126,7 @@ static void benchmark_appel2(void)
 	int i;
 	unsigned long avg = 0;
 
-	memset(&act, sizeof(sigaction), 0);
+	memset(&act, 0, sizeof(sigaction));
 	act.sa_sigaction = benchmark2_handler;
 	act.sa_flags = SA_SIGINFO;
 	sigemptyset(&act.sa_mask);

@@ -7,6 +7,8 @@
 #include <asm/vmx.h>
 #include <linux/kvm_types.h>
 
+DECLARE_PER_CPU(struct vmx_vcpu *, local_vcpu);
+
 struct vmcs {
 	u32 revision_id;
 	u32 abort;
@@ -91,3 +93,12 @@ vmx_do_ept_fault(struct vmx_vcpu *vcpu, unsigned long gpa,
 
 extern void vmx_ept_sync_vcpu(struct vmx_vcpu *vcpu);
 extern void vmx_ept_sync_individual_addr(struct vmx_vcpu *vcpu, gpa_t gpa);
+
+static __always_inline unsigned long vmcs_readl(unsigned long field)
+{
+        unsigned long value;
+
+        asm volatile (ASM_VMX_VMREAD_RDX_RAX
+                      : "=a"(value) : "d"(field) : "cc");
+        return value;
+}
