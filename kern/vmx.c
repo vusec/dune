@@ -1157,7 +1157,7 @@ static void make_pt_regs(struct vmx_vcpu *vcpu, struct pt_regs *regs,
 	 * in a child process since it is not running in Dune.
 	 * Our solution is to adopt a special Dune convention
 	 * where the desired %RIP address is provided in %RCX.
-	 */ 
+	 */
 	if (!(__addr_ok(regs->ip)))
 		regs->ip = regs->cx;
 
@@ -1184,7 +1184,7 @@ static long dune_sys_fork(void)
 {
 	struct vmx_vcpu *vcpu;
 	struct pt_regs regs;
-	
+
 	asm("movq %%r11, %0" : "=r"(vcpu));
 
 	make_pt_regs(vcpu, &regs, __NR_fork);
@@ -1196,7 +1196,7 @@ static long dune_sys_vfork(void)
 {
 	struct vmx_vcpu *vcpu;
 	struct pt_regs regs;
-	
+
 	asm("movq %%r11, %0" : "=r"(vcpu));
 
 	make_pt_regs(vcpu, &regs, __NR_vfork);
@@ -1209,7 +1209,7 @@ static void vmx_init_syscall(void)
 {
 	memcpy(dune_syscall_tbl, (void *) SYSCALL_TBL,
 	       sizeof(sys_call_ptr_t) * NUM_SYSCALLS);
-	
+
 	dune_syscall_tbl[__NR_exit] = (void *) &dune_exit;
 	dune_syscall_tbl[__NR_exit_group] = (void *) &dune_exit_group;
 	dune_syscall_tbl[__NR_clone] = (void *) &dune_sys_clone;
@@ -1371,12 +1371,12 @@ static int vmx_handle_ept_violation(struct vmx_vcpu *vcpu)
 	gva = vmcs_readl(GUEST_LINEAR_ADDRESS);
 	gpa = vmcs_read64(GUEST_PHYSICAL_ADDRESS);
 	vmx_put_cpu(vcpu);
-	
+
 	if (exit_qual & (1 << 6)) {
 		printk(KERN_ERR "EPT: GPA 0x%lx exceeds GAW!\n", gpa);
 		return -EINVAL;
 	}
-	
+
 	if (!(exit_qual & (1 << 7))) {
 		printk(KERN_ERR "EPT: linear address is not valid, GPA: 0x%lx!\n", gpa);
 		return -EINVAL;
@@ -1401,7 +1401,7 @@ static void vmx_handle_syscall(struct vmx_vcpu *vcpu)
 		vcpu->regs[VCPU_REGS_RAX] = -EINVAL;
 		return;
 	}
-	
+
 	if (unlikely(vcpu->regs[VCPU_REGS_RAX] == __NR_sigaltstack ||
 		     vcpu->regs[VCPU_REGS_RAX] == __NR_iopl)) {
 		printk(KERN_INFO "vmx: got unsupported syscall\n");
@@ -1664,7 +1664,7 @@ static void vmx_free_vmxon_areas(void)
 __init int vmx_init(void)
 {
 	int r, cpu;
-	
+
 	if (!cpu_has_vmx()) {
 		printk(KERN_ERR "vmx: CPU does not support VT-x\n");
 		return -EIO;
