@@ -24,8 +24,9 @@ KMISC_INC := /lib/modules/$(KVER)/include
 
 SYSCALL_TBL = 0x$(shell $(EXTRACT) sys_call_table)
 DO_FORK = 0x$(shell $(EXTRACT) do_fork)
+TASK_WORK_RUN = 0x$(shell $(EXTRACT) task_work_run)
 
-CFLAGS_vmx.o = -DSYSCALL_TBL=$(SYSCALL_TBL) -DDO_FORK=$(DO_FORK)
+CFLAGS_vmx.o = -DSYSCALL_TBL=$(SYSCALL_TBL) -DDO_FORK=$(DO_FORK) -DTASK_WORK_RUN=$(TASK_WORK_RUN)
 
 # KSRC_OUTPUT should be overridden if you are using a 2.6 kernel that
 # has it's output sent elsewhere via KBUILD_OUTPUT= or O=

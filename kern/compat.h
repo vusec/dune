@@ -64,4 +64,11 @@ typedef long (*do_fork_hack) (unsigned long, unsigned long,
 static do_fork_hack dune_do_fork = (do_fork_hack) DO_FORK;
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
+typedef void (*task_work_run_t) (void);
+static task_work_run_t dune_task_work_run = (task_work_run_t)TASK_WORK_RUN;
+#else
+static void dune_task_work_run(void) { }
+#endif
+
 #endif /* __DUNE_COMPAT_H_ */

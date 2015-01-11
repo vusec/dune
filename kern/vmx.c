@@ -52,6 +52,7 @@
 #include <linux/percpu.h>
 #include <linux/syscalls.h>
 #include <linux/version.h>
+#include <linux/task_work.h>
 
 #include <asm/desc.h>
 #include <asm/vmx.h>
@@ -1532,6 +1533,27 @@ int vmx_launch(struct dune_config *conf, int64_t *ret_code)
 			vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, x);
 			continue;
 		}
+
+        /*
+         * Since we override the entire syscall return path of the kernel, in
+         * addition to signals there are some other tasks being done there
+         * normally. Since Linux 3.5 there is a task mechanism, where code (e.g.
+         * syscalls) can add a task to a queue, which will then later be
+         * executed, which is here. Since Linux 3.6 the actual fput operation
+         * (e.g. of the close syscall) uses this, so without this files (and
+         * pipes) are never closed.
+         *
+         * TODO: implement all of do_notify_resume if flags &
+         * _TIF_DO_NOTIFY_MASK since currently this skips TIF_MCE_NOTIFY,
+         * TIF_UPROBE and TIF_USER_RETURN_NOTIFY.
+         * */
+        if (unlikely(test_and_clear_tsk_thread_flag(current,
+                        TIF_NOTIFY_RESUME))) {
+            smp_mb__after_clear_bit();
+            if (current->task_works)
+                dune_task_work_run();
+            continue;
+        }
 
 		ret = vmx_run_vcpu(vcpu);
 
