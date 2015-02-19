@@ -1398,6 +1398,19 @@ static int vmx_handle_ept_violation(struct vmx_vcpu *vcpu)
 
 static void vmx_handle_syscall(struct vmx_vcpu *vcpu)
 {
+#ifdef CPL0_VMCALL_ONLY
+	/* Prevent CPL >0 (i.e. non-kernel code) from making vmcalls directly. */
+	/* The current privilege level is always automatically stored by the cpu in
+	 * the 2 least significant bits of the code segment selector. */
+	u16 cs = vmcs_read16(GUEST_CS_SELECTOR);
+	if (unlikely(cs & 3)) {
+		printk(KERN_INFO "vmx: blocking CPL%d syscall (%lld)\n", cs & 3,
+				vcpu->regs[VCPU_REGS_RAX]);
+		vcpu->regs[VCPU_REGS_RAX] = -EPERM;
+		return;
+	}
+#endif
+
 	if (unlikely(vcpu->regs[VCPU_REGS_RAX] > NUM_SYSCALLS)) {
 		vcpu->regs[VCPU_REGS_RAX] = -EINVAL;
 		return;

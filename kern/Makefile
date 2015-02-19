@@ -6,6 +6,13 @@ EXTERNAL_BUILD=y
 CONFIG_DUNE=m
 endif
 
+# Allow the guest to issue VMCALLs only from ring 0? If set, programs running in
+# dune in ring3 (e.g. sandbox apps) cannot circumvent system call interception
+# by executing a vmcall directly. Unset this if the modifed libc is used for
+# efficiency and security does not matter.
+CPL0_VMCALL_ONLY_OPT=-DCPL0_VMCALL_ONLY
+#CPL0_VMCALL_OPT=
+
 list-m :=
 list-$(CONFIG_DUNE) += dune
 obj-$(CONFIG_DUNE) += dune.o
@@ -26,7 +33,7 @@ SYSCALL_TBL = 0x$(shell $(EXTRACT) sys_call_table)
 DO_FORK = 0x$(shell $(EXTRACT) do_fork)
 TASK_WORK_RUN = 0x$(shell $(EXTRACT) task_work_run)
 
-CFLAGS_vmx.o = -DSYSCALL_TBL=$(SYSCALL_TBL) -DDO_FORK=$(DO_FORK) -DTASK_WORK_RUN=$(TASK_WORK_RUN)
+CFLAGS_vmx.o = -DSYSCALL_TBL=$(SYSCALL_TBL) -DDO_FORK=$(DO_FORK) -DTASK_WORK_RUN=$(TASK_WORK_RUN) $(CPL0_VMCALL_ONLY_OPT)
 
 # KSRC_OUTPUT should be overridden if you are using a 2.6 kernel that
 # has it's output sent elsewhere via KBUILD_OUTPUT= or O=
