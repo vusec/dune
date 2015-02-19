@@ -16,6 +16,8 @@ ptrace: ptrace.o
 	$(CC) -o $@ $<
 ptrace_intercept: ptrace_intercept.o
 	$(CC) -o $@ $<
+background: background.o
+	$(CC) -o $@ $<
 
 multivar_intercept.o: multivar.c
 	$(CC) $(CFLAGS) -DINTERCEPT -c -o $@ $<
