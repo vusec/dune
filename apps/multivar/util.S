@@ -1,13 +1,16 @@
+// TODO: make Makefile extract these out of System.map
+#define OLD_RSP 0xb0c0
+#define KERNEL_STACK 0xb848
 
 .section .text
 
-.global dispatcher
+.global syscall_new
 
 .macro SAVE
     swapgs
-    mov %rsp,%gs:0xb0c0
-    mov %gs:0xb848,%rsp
-    sti
+    mov %rsp,%gs:OLD_RSP
+    mov %gs:KERNEL_STACK,%rsp
+    //sti
 
     sub $0x50,%rsp
     mov %rdi,0x40(%rsp)
@@ -18,12 +21,12 @@
     mov %r9,0x10(%rsp)
     mov %r10,0x8(%rsp)
     mov %r11,(%rsp)
-    mov %rax,0x48(%rsp)
+    mov %rax,0x48(%rsp) /* ORIG_RAX */
     mov %rcx,0x50(%rsp)
 .endm
 
 .macro CONTINUE
-    cli
+    //cli
     mov 0x50(%rsp),%rcx
     mov (%rsp),%r11
     mov 0x8(%rsp),%r10
@@ -33,79 +36,49 @@
     mov 0x30(%rsp),%rdx
     mov 0x38(%rsp),%rsi
     mov 0x40(%rsp),%rdi
-    mov %gs:0xb0c0,%rsp
-    jmp *after_swapgs
+    mov %gs:OLD_RSP,%rsp
+    //jmp *after_swapgs
 .endm
 
-dispatcher:
-    // syscall nr is in RAX, let's intercept.
-
-
-    // -  9 (0x09) sys_mmap
-    cmp $0x09, %rax
-    je do_mmap
-
-    // - 10 (0x0a) sys_mprotect
-    cmp $0x0a, %rax
-    je do_mprotect
-
-    // - 13 (0x0d) sys_rt_sigaction
-    cmp $0x0d, %rax
-    je do_sigaction
-
-    // - 15 (0x0f) sys_rt_sigreturn
-    cmp $0x0f, %rax
-    je do_sigreturn
-
-    // -  39 (0x27) sys_getpid
-    cmp $0x27, %rax
-    je do_mv_getpid
-
-    // - 59 (0x3b) sys_execve
-    cmp $0x3b, %rax
-    je do_execve
-
-    // -  186 (0xba) sys_gettid
-    cmp $0xba, %rax
-    je do_mv_gettid
-
-
-    // fallthrough;
-    jmp *syscall_handler
-
-
-do_mmap:
+syscall_new:
     SAVE
-    //call do_c_mmap
-    CONTINUE
+    // input: rax=nr, args in rdi, rsi, rdx, r10, r8, r9
+    // c inp:                 rdi, rsi, rdx, rcx, r8, r9
+    // A bit awkward, we want to pass the value of rax too, but don't waste
+    // performance on using the stack preferably. For now, overwrite the (barely
+    // used) arg5 in r9. TODO: rework this anyway
+    // TODO: pass the entire thing above as a struct
+    sub $0x10, %rsp
+    mov %r9, 0x0(%rsp)
+    mov %r10, %rcx
+    mov %rax, %r9
 
-do_mv_getpid:
-    SAVE
-    //call do_c_getpid
-    CONTINUE
+    // Pass a pointer into the saved regs 'struct' above to allow changing rax
+    lea 0x30(%rsp), %rax
+    mov %rax,0x8(%rsp)
 
-do_mv_gettid:
-    SAVE
-    //call do_c_gettid
-    CONTINUE
+    call handle_syscall
 
-do_mprotect:
-    SAVE
-    //call do_c_mprotect
-    CONTINUE
+    add $0x10, %rsp
 
-do_sigaction:
-    SAVE
-    //call do_c_sigaction
-    CONTINUE
+    test %rax, %rax
+    jnz deny_syscall
 
-do_sigreturn:
-    SAVE
-    //call do_c_sigreturn
+    // TODO: this will pop all registers from the stack and then
+    // system_call_after_swapgs will again push them... better jump straight
+    // into system_call_fastpath, we just have to do the tracesys thing
+    // ourselves
     CONTINUE
+    jmp *syscall_entry_allow
 
-do_execve:
-    SAVE
-    //call do_c_execve
-    CONTINUE
+deny_syscall:
+    // We will jump to ret_from_sys_call (stored in syscall_entry_deny), which
+    // is right after the normal kernel code does the call into the
+    // sys_call_table. handle_syscall should have updated the RAX field already
+    // to give the return value, and the SAVE macro imitates the saving behavior
+    // of system_call_after_swapgs, so our state should be okay.
+    jmp *syscall_entry_deny
+
+
+
 

@@ -2,7 +2,8 @@ CC = gcc
 LD = ld
 CFLAGS  = -Wall -O2 -MD -I ../.. -I ../sandbox
 LDFLAGS = -O2 -L ../../libdune -L ../sandbox -lsandbox -ldune -lpthread -T ../sandbox/sandbox.ld
-obj-m += kernmod.o
+obj-m += lkmmultivar.o
+lkmmultivar-objs = kernmod2.o util.o
 
 all: multivar multivar_intercept ptrace multivar.ko multivar_preload.so multivar_intercept_preload.so
 
@@ -21,7 +22,7 @@ multivar_intercept.o: multivar.c
 ptrace_intercept.o: ptrace.c
 	$(CC) $(CFLAGS) -DINTERCEPT -c -o $@ $<
 
-multivar.ko: kernmod.c
+lkmmultivar.ko: kernmod2.c util.S
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) CFLAGS= LDFLAGS= modules
 
 multivar_preload.so: multivar_preload.c
