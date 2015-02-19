@@ -33,9 +33,11 @@ static void syscall_handler(struct dune_tf *tf)
     }
 #endif
 
+    /*
     if (tf->rax == SYS_getpid)
         dune_printf("SYSCALL: %d %s %d\n", syscall(SYS_getpid),
                 syscall_names[tf->rax], tf->rax);
+    */
 
     /* the fork and vfork syscalls are normally not used (e.g. glibc implements
      * fork() with the clone syscall. */
