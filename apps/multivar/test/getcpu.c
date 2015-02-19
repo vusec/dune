@@ -4,6 +4,6 @@
 
 void main()
 {
-    int id = syscall(SYS_getpid);
-    printf("getpid: %d\n", id);
+    int id = syscall(SYS_getcpu);
+    printf("getcpu: %d\n", id);
 }

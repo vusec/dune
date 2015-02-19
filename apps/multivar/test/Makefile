@@ -7,11 +7,13 @@ LDFLAGS = -rdynamic -L ../../../libdune -Wl,--whole-archive -ldune -Wl,--no-whol
 # For multivar-sandbox tests:
 #LDFLAGS =
 
-all: gettid getpid getpid_bench getpid_bench2 fork
+all: gettid getpid getpid_bench getpid_bench2 fork getcpu
 
 gettid: gettid.c
 	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
 getpid: getpid.c
+	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
+getcpu: getcpu.c
 	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
 getpid_bench: getpid_bench.c
 	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
@@ -22,6 +24,6 @@ fork: fork.c
 
 
 clean:
-	rm -f *.o *.d gettid getpid getpid_bench getpid_bench2 fork
+	rm -f *.o *.d gettid getpid getpid_bench getpid_bench2 fork getcpu
 
 -include *.d
