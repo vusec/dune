@@ -16,14 +16,13 @@ typedef struct variant_proc
     pid_t pid;
     int status;
     struct variant_proc *next;
+
+    int syscall_entered;
+    unsigned long long int last_syscall;
 } variant_proc_t;
 
 typedef struct variant
 {
-    int syscall_entered;
-    unsigned long long int last_syscall;
-    int override_return_value;
-    unsigned long long int return_value;
     variant_proc_t *procs;
 } variant_t;
 
@@ -61,6 +60,7 @@ variant_proc_t *new_proc(pid_t pid)
     proc->pid = pid;
     proc->status = 0;
     proc->next = NULL;
+    proc->syscall_entered = 0;
     return proc;
 }
 
@@ -160,8 +160,6 @@ void setup(int nvar, char **program, variant_t *variants)
         else
         {
             variant_proc_t *proc;
-            variants[i].syscall_entered = 0;
-            variants[i].override_return_value = 0;
             variants[i].procs = NULL;
             proc = new_proc(pid);
             add_proc_to_list(&variants[i].procs, proc);
@@ -181,13 +179,35 @@ void setup(int nvar, char **program, variant_t *variants)
 void handle_syscall(variant_t *variants, int nvar, pid_t pid)
 {
     struct user_regs_struct regs;
-    variant_t *variant;
-    int i;
-    int mismatch;
+    variant_proc_t *proc = find_proc(variants, nvar, pid);
     ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-    ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
     //printf(" # syscall %d %lld\n", pid, regs.orig_rax);
-    return;
+
+#ifdef INTERCEPT
+    if (!proc->syscall_entered)
+    {
+        proc->last_syscall = regs.orig_rax;
+        /* Replacing getpid with getpid is sort of useless but enough for
+         * benchmarks. */
+        if (proc->last_syscall == SYS_getpid)
+        {
+            regs.orig_rax = SYS_getpid;
+            ptrace(PTRACE_SETREGS, pid, NULL, &regs);
+        }
+    }
+    else
+        if (proc->last_syscall == SYS_getpid)
+        {
+            regs.rax = -1;
+            ptrace(PTRACE_SETREGS, pid, NULL, &regs);
+        }
+#endif
+
+    proc->syscall_entered = !proc->syscall_entered;
+
+    ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+
+#if 0
 
     variant = find_proc_variant(variants, nvar, pid);
     if (variant->syscall_entered)
@@ -245,6 +265,7 @@ void handle_syscall(variant_t *variants, int nvar, pid_t pid)
         }
         //ptrace(PTRACE_SYSCALL, variants[i].pid, NULL, NULL);
     }
+#endif
 }
 
 int main(int argc, char **argv)
