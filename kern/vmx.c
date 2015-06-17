@@ -1346,6 +1346,15 @@ static int __noclone vmx_run_vcpu(struct vmx_vcpu *vcpu)
 		return VMX_EXIT_REASONS_FAILED_VMENTRY;
 	}
 
+	/* If an exception occured during the handling of an interrupt we inserted,
+	 * this we re-inject the interrupt. This fixes signals not being handled due
+	 * to EPT vioations.
+	 * TODO: this is what vmx_complete_interrupts does in the orignal KVM
+	 * source, but with additional checks.
+	 */
+	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD,
+			vmcs_read32(IDT_VECTORING_INFO_FIELD));
+
 	return vmcs_read32(VM_EXIT_REASON);
 
 #if 0
@@ -1540,11 +1549,13 @@ int vmx_launch(struct dune_config *conf, int64_t *ret_code)
 				break;
 			}
 
+			vmx_get_cpu(vcpu);
+			local_irq_disable();
+
 			x  = DUNE_SIGNAL_INTR_BASE + signr;
 			x |= INTR_INFO_VALID_MASK;
 
 			vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, x);
-			continue;
 		}
 
         /*
