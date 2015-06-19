@@ -45,7 +45,7 @@ struct thread_arg {
 
 int exec_execev(const char *filename, char *const argv[], char *const envp[]);
 
-static boxer_syscall_cb _syscall_monitor;
+static boxer_syscall_cb _syscall_monitor, _syscall_monitor_post = NULL;
 static pthread_mutex_t _syscall_mtx;
 
 static void print_procmap(void)
@@ -129,6 +129,11 @@ fault:
 void boxer_register_syscall_monitor(boxer_syscall_cb cb)
 {
 	_syscall_monitor = cb;
+}
+
+void boxer_register_syscall_monitor_post(boxer_syscall_cb cb)
+{
+	_syscall_monitor_post = cb;
 }
 
 void do_enter_thread(struct dune_tf *tf)
@@ -668,6 +673,9 @@ static void syscall_handler(struct dune_tf *tf)
 		return;
 
 	syscall_do(tf);
+
+    if (_syscall_monitor_post)
+        _syscall_monitor_post(tf);
 }
 
 int trap_init(void)
