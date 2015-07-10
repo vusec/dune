@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/auxv.h>
 
 #include "sandbox.h"
 
@@ -115,40 +116,21 @@ out:
 static void count_args(char *argv[], int *argc, size_t *arglen)
 {
 	int i = 0;
+    *arglen = 0;
 
 	while (argv[i])
+    {
+        *arglen += strlen(argv[i]) + 1;
 		i++;
+    }
 
 	*argc = i;
-	if (!i) {
-		*arglen = 0;
-		return;
-	}
-
-	*arglen = (size_t) rawmemchr(argv[i - 1], 0) -
-		  (size_t) argv[0] + 1;
-}
-
-static Elf64_auxv_t * find_aux_entry(Elf64_auxv_t *aux, uint64_t type)
-{
-	while (aux->a_type) {
-		if (aux->a_type == type)
-			return aux;
-		aux++;
-	}
-
-	return NULL;
 }
 
 static inline void copy_aux(Elf64_auxv_t *ref, Elf64_auxv_t *cur, uint64_t type)
 {
-	Elf64_auxv_t *found;
-
 	cur->a_type = type;
-	found = find_aux_entry(ref, type);
-	assert(found);
-	cur->a_un.a_val = found->a_un.a_val;
-
+	cur->a_un.a_val = getauxval(type);
 }
 
 static void
