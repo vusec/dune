@@ -266,7 +266,7 @@ int boxer_main(int argc, char *argv[])
 		return -EINVAL;
 
 	/* XXX needed.  Probably does some libc stuff */
-	printf(" \b"); 
+	printf(" \b");
 
 //	printf("%s\n", environ[0]);
 

@@ -40,12 +40,14 @@ struct thread_arg {
 	pthread_cond_t	ta_cnd;
 	pthread_mutex_t	ta_mtx;
 	pid_t		ta_tid;
+	pid_t		ta_ptid;
 	struct dune_tf	*ta_tf;
 };
 
 int exec_execev(const char *filename, char *const argv[], char *const envp[]);
 
-static boxer_syscall_cb _syscall_monitor, _syscall_monitor_post = NULL;
+static boxer_syscall_cb _syscall_monitor;
+static boxer_syscall_post_cb _syscall_monitor_post = NULL;
 static pthread_mutex_t _syscall_mtx;
 
 static void print_procmap(void)
@@ -131,7 +133,7 @@ void boxer_register_syscall_monitor(boxer_syscall_cb cb)
 	_syscall_monitor = cb;
 }
 
-void boxer_register_syscall_monitor_post(boxer_syscall_cb cb)
+void boxer_register_syscall_monitor_post(boxer_syscall_post_cb cb)
 {
 	_syscall_monitor_post = cb;
 }
@@ -151,8 +153,9 @@ static void *pthread_entry(void *arg)
 	struct dune_tf *tf = a->ta_tf;
 	struct dune_tf child_tf;
 	int *tidp = NULL;
-	pid_t tid;
+	pid_t tid, ptid = a->ta_ptid;
 	int flags = ARG0(tf);
+    uint64_t orig_r10;
 
 	dune_enter();
 
@@ -175,15 +178,21 @@ static void *pthread_entry(void *arg)
 
 	/* enter thread */
 	memcpy(&child_tf, tf, sizeof(child_tf));
-        child_tf.rip = tf->rip;
-	child_tf.rax = 0;
+    child_tf.rip = tf->rip;
 	child_tf.rsp = ARG1(tf);
+	child_tf.rax = 0;
 
 	/* tell parent tid */
 	pthread_mutex_lock(&a->ta_mtx);
 	a->ta_tid = tid;
 	pthread_mutex_unlock(&a->ta_mtx);
 	pthread_cond_signal(&a->ta_cnd);
+
+    orig_r10 = child_tf.r10;
+	child_tf.r10 = ptid; /* Pass ptid to monitor_post */
+    if (_syscall_monitor_post)
+        _syscall_monitor_post(&child_tf, SYS_clone);
+    child_tf.r10 = orig_r10;
 
 	do_enter_thread(&child_tf);
 
@@ -196,7 +205,8 @@ static long dune_pthread_create(struct dune_tf *tf)
 	struct thread_arg arg;
 
 	arg.ta_tf  = tf;
-	arg.ta_tid = 0;
+    arg.ta_tid = 0;
+    arg.ta_ptid = syscall(SYS_gettid); /* Let thread know its parent tid. */
 
 	if (pthread_cond_init(&arg.ta_cnd, NULL))
 		return -1;
@@ -500,7 +510,7 @@ static int syscall_check_params(struct dune_tf *tf)
 	case SYS_execve:
 	{
                 char *p = (char*)ARG0(tf);
-                
+
                 if (check_string(p)) {
                         err = -EFAULT;
                         break;
@@ -588,7 +598,7 @@ static void syscall_do_foreal(struct dune_tf *tf)
 		break;
 
 	case SYS_munmap:
-		tf->rax = umm_munmap((void *) ARG0(tf), (size_t) ARG1(tf)); 
+		tf->rax = umm_munmap((void *) ARG0(tf), (size_t) ARG1(tf));
 		break;
 
 	case SYS_mremap:
@@ -614,6 +624,7 @@ static void syscall_do_foreal(struct dune_tf *tf)
 
 
 	/* ignore signals for now */
+		/*
 	case SYS_rt_sigaction:
 	case SYS_rt_sigprocmask:
 		tf->rax = 0;
@@ -629,6 +640,7 @@ static void syscall_do_foreal(struct dune_tf *tf)
 	case SYS_rt_sigtimedwait:
 		tf->rax = -ENOSYS;
 		break;
+	*/
 
 	case SYS_exit_group:
 	case SYS_exit:
@@ -664,6 +676,9 @@ static void syscall_do(struct dune_tf *tf)
 
 static void syscall_handler(struct dune_tf *tf)
 {
+    uint64_t syscall_no = tf->rax;
+    pid_t ptid = -1;
+    uintptr_t orig_r10;
 //	printf("Syscall No. %d\n", tf->rax);
 
 	if (syscall_check_params(tf) == -1)
@@ -672,10 +687,22 @@ static void syscall_handler(struct dune_tf *tf)
 	if (!syscall_allow(tf))
 		return;
 
+    if (syscall_no == SYS_clone)
+        ptid = syscall(SYS_gettid);
+
 	syscall_do(tf);
 
+    if (syscall_no == SYS_clone)
+    {
+        orig_r10 = tf->r10;
+        tf->r10 = ptid;
+    }
+
     if (_syscall_monitor_post)
-        _syscall_monitor_post(tf);
+        _syscall_monitor_post(tf, syscall_no);
+
+    if (syscall_no == SYS_clone)
+        tf->r10 = orig_r10;
 }
 
 int trap_init(void)
