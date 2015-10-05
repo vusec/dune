@@ -65,10 +65,16 @@ static do_fork_hack dune_do_fork = (do_fork_hack) DO_FORK;
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
-typedef void (*task_work_run_t) (void);
-static task_work_run_t dune_task_work_run = (task_work_run_t)TASK_WORK_RUN;
+typedef void (*do_notify_resume_t) (struct pt_regs *, void *, __u32);
+static do_notify_resume_t dune_do_notify_resume = (do_notify_resume_t)DO_NOTIFY_RESUME;
+void do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+{
+    dune_do_notify_resume(regs, unused, thread_info_flags);
+}
 #else
-static void dune_task_work_run(void) { }
+void do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+{
+}
 #endif
 
 #endif /* __DUNE_COMPAT_H_ */

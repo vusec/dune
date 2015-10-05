@@ -44,7 +44,6 @@
 #include <linux/highmem.h>
 #include <linux/sched.h>
 #include <linux/moduleparam.h>
-#include <linux/ftrace_event.h>
 #include <linux/slab.h>
 #include <linux/tboot.h>
 #include <linux/init.h>
@@ -1566,17 +1565,18 @@ int vmx_launch(struct dune_config *conf, int64_t *ret_code)
          * executed, which is here. Since Linux 3.6 the actual fput operation
          * (e.g. of the close syscall) uses this, so without this files (and
          * pipes) are never closed.
-         *
-         * TODO: implement all of do_notify_resume if flags &
-         * _TIF_DO_NOTIFY_MASK since currently this skips TIF_MCE_NOTIFY,
-         * TIF_UPROBE and TIF_USER_RETURN_NOTIFY.
-         * */
-        if (unlikely(test_and_clear_tsk_thread_flag(current,
-                        TIF_NOTIFY_RESUME))) {
-            smp_mb__after_clear_bit();
-            if (current->task_works)
-                dune_task_work_run();
-            continue;
+         */
+        if (unlikely(current_thread_info()->flags & _TIF_DO_NOTIFY_MASK))
+        {
+            struct pt_regs ptregs;
+            local_irq_enable();
+            vmx_put_cpu(vcpu);
+
+            make_pt_regs(vcpu, &ptregs, vcpu->regs[VCPU_REGS_RAX]);
+            do_notify_resume(&ptregs, NULL, current_thread_info()->flags);
+
+            vmx_get_cpu(vcpu);
+            local_irq_disable();
         }
 
         ret = vmx_run_vcpu(vcpu);
