@@ -23,6 +23,7 @@
 
 #include "dune.h"
 #include "vmx.h"
+#include "compat.h"
 
 #define EPT_LEVELS  4   /* 0 through 3 */
 #define HUGE_PAGE_SIZE  2097152

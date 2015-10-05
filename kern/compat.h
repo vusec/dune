@@ -1,6 +1,8 @@
 #ifndef __DUNE_COMPAT_H_
 #define __DUNE_COMPAT_H_
 
+#include <linux/version.h>
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0)
 #include <asm/fpu-internal.h>
 #endif
@@ -13,7 +15,7 @@
 #define X86_CR4_RDWRGSFS X86_CR4_FSGSBASE
 #endif
 
-#if !defined(VMX_EPT_AD_BIT)
+#ifndef VMX_EPT_AD_BIT
 #define VMX_EPT_AD_BIT          (1ull << 21)
 #define VMX_EPT_AD_ENABLE_BIT   (1ull << 6)
 #endif
@@ -30,10 +32,26 @@
 #define SECONDARY_EXEC_ENABLE_INVPCID   0x00001000
 #endif
 
+#ifndef SECONDARY_EXEC_RDRAND_EXITING
+#define SECONDARY_EXEC_RDRAND_EXITING   0x00000800
+#endif
+
 #ifndef X86_CR4_FSGSBASE
 #define X86_CR4_FSGSBASE    X86_CR4_RDWRGSFS
 #endif
 
+/* removed from 3.19 or so */
+#ifndef __get_cpu_var
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+#endif
+
+/* Not part of vmcs_field enum as of 4.2 */
+#define VM_FUNCTION_CONTROLS       0x2018
+#define VM_FUNCTION_CONTROLS_HIGH  0x2019
+#define EPTP_LIST_ADDR             0x2024
+#define EPTP_LIST_ADDR_HIGH        0x2025
+
+#ifdef DO_FORK
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
 typedef long (*do_fork_hack) (unsigned long, unsigned long, unsigned long,
                               int __user *, int __user *);
@@ -63,7 +81,9 @@ typedef long (*do_fork_hack) (unsigned long, unsigned long,
                               int __user *, int __user *);
 static do_fork_hack dune_do_fork = (do_fork_hack) DO_FORK;
 #endif
+#endif
 
+#ifdef DO_NOTIFY_RESUME
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
 typedef void (*do_notify_resume_t) (struct pt_regs *, void *, __u32);
 static do_notify_resume_t dune_do_notify_resume = (do_notify_resume_t)DO_NOTIFY_RESUME;
@@ -75,6 +95,7 @@ void do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flag
 void do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
 {
 }
+#endif
 #endif
 
 #endif /* __DUNE_COMPAT_H_ */

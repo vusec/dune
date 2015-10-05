@@ -51,7 +51,6 @@
 #include <linux/percpu.h>
 #include <linux/syscalls.h>
 #include <linux/version.h>
-#include <linux/task_work.h>
 
 #include <asm/desc.h>
 #include <asm/vmx.h>
