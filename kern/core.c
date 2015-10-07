@@ -22,10 +22,13 @@
 #include <linux/compat.h>
 #include <linux/fs.h>
 #include <linux/perf_event.h>
+#include <linux/version.h>
 #include <asm/uaccess.h>
+#include <asm/i387.h>
 
 #include "dune.h"
 #include "vmx.h"
+#include "compat.h"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("A driver for Dune");

@@ -26,6 +26,7 @@
 #define X86_CR4_FSGSBASE	X86_CR4_RDWRGSFS
 #endif
 
+#ifdef DO_FORK
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
 typedef long (*do_fork_hack) (unsigned long, unsigned long, unsigned long,
                               int __user *, int __user *);
@@ -54,6 +55,11 @@ typedef long (*do_fork_hack) (unsigned long, unsigned long,
                               struct pt_regs *, unsigned long,
                               int __user *, int __user *);
 static do_fork_hack dune_do_fork = (do_fork_hack) DO_FORK;
+#endif
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
 #endif
 
 #endif /* __DUNE_COMPAT_H_ */
