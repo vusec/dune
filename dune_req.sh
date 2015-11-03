@@ -20,8 +20,12 @@ cat /proc/cpuinfo | grep flags | grep ept | grep vpid | grep vmx > /dev/null
 check_good
 
 printf "Checking kernel version (3.0 or later) ... "
-uname -r | awk -F . '{print $1}' | grep 3 > /dev/null 2> /dev/null
-check_good
+ver=$(uname -r | awk -F . '{print $1}')
+if [ $ver -ge 3 ] ; then
+  echo yes
+else
+  echo nope
+fi
 
 printf "Checking for kernel headers... "
 ls $MOD/build/include > /dev/null 2> /dev/null
