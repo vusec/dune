@@ -86,11 +86,11 @@ exec_execev(const char *filename, char *const argv[], char *const envp[])
 
         //printf("SHELL!\n");
 
-        // Parse interpreter and arguments.  According to FreeBSD's historical 
-        // note in sys/kern/imgact_shell.c the most compatible behavoir is to 
-        // parse all interpreter arguements as a single argv into the 
-        // application.  If there are no arguements the first arguement will be 
-        // the script itself.  Parsing excess whitespace from the beginning and 
+        // Parse interpreter and arguments.  According to FreeBSD's historical
+        // note in sys/kern/imgact_shell.c the most compatible behavoir is to
+        // parse all interpreter arguements as a single argv into the
+        // application.  If there are no arguements the first arguement will be
+        // the script itself.  Parsing excess whitespace from the beginning and
         // end is optional and most systems do not do that.
 
         // Call sandbox with the following arguements:
