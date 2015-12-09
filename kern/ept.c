@@ -20,6 +20,7 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <asm/pgtable.h>
+#include <asm/io.h>
 
 #include "dune.h"
 #include "vmx.h"

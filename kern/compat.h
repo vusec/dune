@@ -25,6 +25,35 @@
 #define VMX_EPT_EXTENT_INDIVIDUAL_BIT           (1ull << 24)
 #endif
 
+#ifndef VMX_EPT_1GB_PAGE_BIT
+#define VMX_EPT_1GB_PAGE_BIT            (1ull << 17)
+#endif
+
+#ifndef VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT
+#define VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT      (1ull << 9) /* (41 - 32) */
+#endif
+
+#ifndef VMX_VPID_EXTENT_GLOBAL_CONTEXT_BIT
+#define VMX_VPID_EXTENT_GLOBAL_CONTEXT_BIT      (1ull << 10) /* (42 - 32) */
+#endif
+
+#ifndef SECONDARY_EXEC_RDTSCP
+#define SECONDARY_EXEC_RDTSCP            0x00000008
+#endif
+
+#ifndef X86_FEATURE_PCID
+#define X86_FEATURE_PCID    ( 4*32+17) /* Process Context Identifiers */
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
+#define HOST_IA32_EFER 0x00002c02
+#define GUEST_IA32_EFER 0x00002806
+#endif
+
+#ifndef __noclone
+#define __noclone   __attribute__((__noclone__))
+#endif
+
 #ifndef X86_CR4_PCIDE
 #define X86_CR4_PCIDE       0x00020000 /* enable PCID support */
 #endif
