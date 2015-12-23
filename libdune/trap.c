@@ -158,6 +158,7 @@ void dune_trap_handler(int num, struct dune_tf *tf)
     case T_NMI:
     case T_DBLFLT:
     case T_GPFLT:
+        dune_procmap_dump();
         dune_printf("fatal exception %d, code %lx - dying...\n",
                num, tf->err);
         dune_dump_trap_frame(tf);
@@ -166,6 +167,8 @@ void dune_trap_handler(int num, struct dune_tf *tf)
 
     default:
         dune_printf("unhandled exception %d\n", num);
+        if (num > DUNE_SIGNAL_INTR_BASE)
+            dune_printf("Was signal %d - %s\n", num - DUNE_SIGNAL_INTR_BASE, strsignal(num - DUNE_SIGNAL_INTR_BASE));
         dune_dump_trap_frame(tf);
         dune_die();
     }

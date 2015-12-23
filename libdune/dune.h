@@ -2,9 +2,13 @@
  * dune.h - the libdune API
  */
 
+#ifndef _DUNE_H
+#define _DUNE_H
+
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/queue.h>
+#include <sys/ucontext.h>
 #include "mmu.h"
 #include "elf.h"
 #include "fpu.h"
@@ -114,6 +118,8 @@ extern int dune_jump_to_user(struct dune_tf *tf);
 extern void dune_ret_from_user(int ret)  __attribute__ ((noreturn));
 extern void dune_dump_trap_frame(struct dune_tf *tf);
 extern void dune_passthrough_syscall(struct dune_tf *tf);
+
+extern void dune_getcontext(ucontext_t *ucp, struct dune_tf *tf);
 
 // page allocation
 
@@ -358,3 +364,5 @@ static inline int dune_init_and_enter(void)
 
     return dune_enter();
 }
+
+#endif

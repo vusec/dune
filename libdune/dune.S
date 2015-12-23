@@ -255,6 +255,11 @@ __dune_syscall:
         movq    %gs:TMP, %rax
         movq    %rax, RSP(%rsp)
 
+        /* Only enable this for debugging, eg to get libunwind to work for
+         * unwinding userspace apps. otherwise, the app will take a small but
+         * unnessesarry performance hit. */
+        SAVE_REST
+
         /* then restore the CPL0 FS base address */
         SET_G0_FS_BASE
 

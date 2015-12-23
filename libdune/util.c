@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <sys/ucontext.h>
 
 #include "dune.h"
 
@@ -107,4 +108,29 @@ sighandler_t dune_signal(int sig, sighandler_t cb)
     dune_register_intr_handler(DUNE_SIGNAL_INTR_BASE + sig, x);
 
     return NULL;
+}
+
+/* Create an ucontext_t from a given dune_tf (i.e., from userspace state).
+ * Useful for e.g. libunwind of userspace. */
+void dune_getcontext(ucontext_t *ucp, struct dune_tf *tf)
+{
+#define R(x) (ucp->uc_mcontext.gregs[x])
+    R(0)  = tf->r8;
+    R(1)  = tf->r9;
+    R(2)  = tf->r10;
+    R(3)  = tf->r11;
+    R(4)  = tf->r12;
+    R(5)  = tf->r13;
+    R(6)  = tf->r14;
+    R(7)  = tf->r15;
+    R(8)  = tf->rdi;
+    R(9)  = tf->rsi;
+    R(10) = tf->rbp;
+    R(11) = tf->rbx;
+    R(12) = tf->rdx;
+    R(13) = tf->rax;
+    R(14) = tf->rcx;
+    R(15) = tf->rsp;
+    R(16) = tf->rip;
+#undef R
 }
