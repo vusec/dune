@@ -26,6 +26,7 @@
 
 #include "dune.h"
 #include "vmx.h"
+#include "compat.h"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("A driver for Dune");

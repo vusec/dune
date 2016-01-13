@@ -674,11 +674,20 @@ static void ept_mmu_notifier_change_pte(struct mmu_notifier *mn,
 
 static int ept_mmu_notifier_clear_flush_young(struct mmu_notifier *mn,
                           struct mm_struct *mm,
-                          unsigned long address)
+                          unsigned long address,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+                          unsigned long end_addr
+#endif
+
+        )
 {
     struct vmx_vcpu *vcpu = mmu_notifier_to_vmx(mn);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+    pr_debug("ept: clear_flush_young addr %lx end %lx\n", address, end_addr);
+#else
     pr_debug("ept: clear_flush_young addr %lx\n", address);
+#endif
 
     if (!vcpu->ept_ad_enabled)
         return ept_invalidate_page(vcpu, mm, address);
