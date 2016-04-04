@@ -126,6 +126,9 @@ void do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flag
 {
 }
 #endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
 #endif
 
 #endif /* __DUNE_COMPAT_H_ */
