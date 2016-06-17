@@ -1,3 +1,10 @@
+Dune
+====
+
+This is a fork of Dune (http://dune.scs.stanford.edu/). It contains changes
+supporting our other research projects. However, it also contains general
+compatibility patches, e.g., for new Linux versions.
+
 Overview
 ========
 
