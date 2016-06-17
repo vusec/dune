@@ -110,6 +110,28 @@ sighandler_t dune_signal(int sig, sighandler_t cb)
     return NULL;
 }
 
+static void *__dune_procmap_print_ptr_val;
+static void __dune_procmap_print_ptr(const struct dune_procmap_entry *e)
+{
+    unsigned long ptr = (unsigned long)__dune_procmap_print_ptr_val;
+    if (ptr < e->begin || ptr > e->end)
+        return;
+    dune_printf("Ptr 0x%lx at offset %lx in %s\n"
+            "\t\t(0x%016lx-0x%016lx %c%c%c%c %08lx)\n",
+            ptr, ptr - e->begin, e->path,
+            e->begin, e->end,
+            e->r ? 'R' : '-',
+            e->w ? 'W' : '-',
+            e->x ? 'X' : '-',
+            e->p ? 'P' : 'S',
+            e->offset);
+}
+void dune_print_ptr_mapping(void *ptr)
+{
+    __dune_procmap_print_ptr_val = ptr;
+    dune_procmap_iterate(&__dune_procmap_print_ptr);
+}
+
 /* Create an ucontext_t from a given dune_tf (i.e., from userspace state).
  * Useful for e.g. libunwind of userspace. */
 void dune_getcontext(ucontext_t *ucp, struct dune_tf *tf)

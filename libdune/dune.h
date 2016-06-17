@@ -315,6 +315,7 @@ typedef void (*dune_procmap_cb)(const struct dune_procmap_entry *);
 
 extern void dune_procmap_iterate(dune_procmap_cb cb);
 extern void dune_procmap_dump();
+extern void dune_print_ptr_mapping(void *ptr);
 
 // elf helper functions
 

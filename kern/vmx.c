@@ -1542,7 +1542,11 @@ int vmx_launch(struct dune_config *conf, int64_t *ret_code)
                 continue;
 
             if (signr == SIGKILL) {
-                printk(KERN_INFO "vmx: got sigkill, dying");
+                unsigned long long rip;
+                vmx_get_cpu(vcpu);
+                rip = vmcs_readl(GUEST_RIP);
+                vmx_put_cpu(vcpu);
+                printk(KERN_INFO "vmx: got sigkill, dying (RIP: %llx\n", rip);
                 vcpu->ret_code = ((ENOSYS) << 8);
                 break;
             }
