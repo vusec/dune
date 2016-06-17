@@ -780,7 +780,7 @@ static void vmx_setup_initial_guest_state(struct dune_config *conf)
 {
     unsigned long tmpl;
     unsigned long cr4 = X86_CR4_PAE | X86_CR4_VMXE | X86_CR4_OSXMMEXCPT |
-                X86_CR4_PGE | X86_CR4_OSFXSR;
+                X86_CR4_PGE | X86_CR4_OSFXSR | X86_CR4_TSD;
     if (boot_cpu_has(X86_FEATURE_PCID))
         cr4 |= X86_CR4_PCIDE;
     if (boot_cpu_has(X86_FEATURE_OSXSAVE))
