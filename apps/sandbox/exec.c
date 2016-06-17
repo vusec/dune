@@ -12,8 +12,13 @@
 #define EXECPGSIZE 4096
 
 extern char **environ;
-const char *sandbox_path = "./sandbox";
+char *sandbox_path = "./sandbox";
 const char *ld_path = "/lib64/ld-linux-x86-64.so.2";
+
+void boxer_set_sandbox_path(char *path)
+{
+    sandbox_path = path;
+}
 
 int
 getlen(char *const arr[])
