@@ -371,7 +371,9 @@ __dune_intr_with_num:
 __dune_intr_handler:
         /* setup arguments and call the handler */
         movq    %rsp, %rsi
+        subq $8, %rsp
         call    dune_trap_handler
+        addq $8, %rsp
 
         /* next restore the CPL3 FS base address */
         testq   $3, CS(%rsp)
