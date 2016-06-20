@@ -1,4 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-sudo insmod kern/dune.ko
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+sudo rmmod dune
+sudo insmod ${DIR}/kern/dune.ko
 sudo chmod 777 /dev/dune
