@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 CC	= gcc
 CFLAGS	= -Wall -g -MD -O2 -I ../ -fno-common
-LDFLAGS  = -L ../libdune -ldune -lpthread
+LDFLAGS  = -L ../libdune -ldune -lpthread -fuse-ld=bfd
 
 all: hello test timetest test_sandbox test_dsmmap test_syscall
 
